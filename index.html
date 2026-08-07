@@ -110,19 +110,35 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
 }
 
 
-/* ===== ONEDRIVE / MS LOGIN ===== */
-.ms-btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#444;border:1.5px solid #ccc;padding:9px 20px;border-radius:4px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
-.ms-btn:hover{border-color:#0078d4;color:#0078d4;box-shadow:0 1px 4px rgba(0,120,212,.15);}
-.ms-btn svg{flex-shrink:0;}
-.od-bar{background:#f0f6ff;border:1px solid #c2d8f5;border-radius:6px;padding:12px 16px;margin-top:16px;font-family:Arial,sans-serif;font-size:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-.od-user{color:#1a3a6b;font-weight:700;}
-.od-status{font-size:11px;color:#555;margin-top:2px;}
-.od-link{font-size:11px;color:#0078d4;text-decoration:none;font-weight:600;}
-.od-link:hover{text-decoration:underline;}
-.btn-save{background:#0078d4;color:#fff;border:none;padding:10px 26px;border-radius:4px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
-.btn-save:disabled{background:#aaa;cursor:not-allowed;}
-.save-progress{margin-top:10px;font-family:Arial,sans-serif;font-size:11px;color:#555;}
-@media print{.od-bar{display:none!important;}.btn-save{display:none!important;}}
+/* ===== SUPABASE / SAVE ===== */
+.sb-bar{background:#f0faf4;border:1px solid #b2dfcc;border-radius:6px;padding:12px 16px;margin-top:14px;font-family:Arial,sans-serif;font-size:12px;}
+.btn-sb{background:#1a3a6b;color:#fff;border:none;padding:10px 26px;border-radius:4px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;}
+.btn-sb:disabled{background:#aaa;cursor:not-allowed;}
+.sb-progress{margin-top:8px;font-family:Arial,sans-serif;font-size:11px;color:#555;}
+.num-laudo{font-family:'Courier New',monospace;font-size:13px;font-weight:700;color:#1a3a6b;background:#eef2fb;padding:4px 10px;border-radius:4px;border:1px solid #c0cbe5;}
+@media print{.sb-bar{display:none!important;}}
+
+
+/* ===== CONSULTA ===== */
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 16px;min-width:110px;text-align:center;}
+.stat-num{font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:var(--azul);}
+.stat-label{font-family:Arial,sans-serif;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;}
+.laudo-row{display:grid;grid-template-columns:140px 1fr 1fr 110px 100px 80px;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #eef2f8;font-family:Arial,sans-serif;font-size:11.5px;}
+.laudo-row:hover{background:#f7f9fd;}
+.laudo-row-hdr{background:var(--azul);color:#fff;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-radius:4px 4px 0 0;}
+.laudo-row-hdr:hover{background:var(--azul);}
+.laudo-num{font-family:'Courier New',monospace;font-weight:700;color:var(--azul);font-size:11px;}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;font-family:Arial,sans-serif;}
+.badge-hemo{background:#dde8fb;color:#1a3a6b;}
+.badge-bio{background:#ddf1e8;color:#1a5c35;}
+.badge-oto{background:#fdf0dd;color:#7a4a00;}
+.badge-pele{background:#f0ddf8;color:#5a1a7a;}
+.badge-misto{background:#eee;color:#555;}
+.btn-ver{background:var(--verde);color:#fff;border:none;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;}
+.btn-ver:hover{opacity:.85;}
+.pg-btn{background:#fff;border:1px solid var(--border);padding:4px 12px;border-radius:4px;font-family:Arial,sans-serif;font-size:11px;cursor:pointer;color:var(--azul);}
+.pg-btn:disabled{color:#aaa;cursor:default;}
+.pg-info{font-family:Arial,sans-serif;font-size:11px;color:#888;}
 
 /* Print */
 @media print{
@@ -150,6 +166,7 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
     <button class="tab" onclick="setTab(2)">③ Bioquímica</button>
     <button class="tab" onclick="setTab(3)">④ Citologia Otológica</button>
     <button class="tab" onclick="setTab(4)">⑤ Citologia de Pele</button>
+    <button class="tab" onclick="setTab(5);carregarLaudos()">⑥ Consulta</button>
   </div>
 
   <!-- DADOS DO PACIENTE -->
@@ -774,6 +791,49 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
       <button class="btn-green" onclick="gerarLaudo()">↗ Gerar Laudo</button>
     </div>
   </div>
+  <!-- CONSULTA DE LAUDOS -->
+  <div class="panel" id="tab5">
+    <div class="sec-title first-sec">Consulta de Laudos Emitidos</div>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+      <div class="fgg" style="flex:1;min-width:160px;">
+        <label>Buscar por animal ou responsável</label>
+        <input type="text" id="busca-texto" placeholder="Nome do animal..." oninput="filtrarLaudos()">
+      </div>
+      <div class="fgg" style="min-width:140px;">
+        <label>Tipo de exame</label>
+        <select id="busca-tipo" onchange="filtrarLaudos()">
+          <option value="">Todos</option>
+          <option value="hemograma">Hemograma</option>
+          <option value="bioquimica">Bioquímica</option>
+          <option value="citologia_otologica">Citologia Otológica</option>
+          <option value="citologia_pele">Citologia de Pele</option>
+        </select>
+      </div>
+      <div class="fgg" style="min-width:120px;">
+        <label>Ano</label>
+        <select id="busca-ano" onchange="carregarLaudos()">
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="carregarLaudos()" style="height:34px;margin-bottom:1px;">🔄 Atualizar</button>
+    </div>
+
+    <!-- Contadores -->
+    <div id="consulta-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
+    <!-- Tabela de resultados -->
+    <div id="consulta-loading" style="font-family:Arial,sans-serif;font-size:12px;color:#888;padding:20px;text-align:center;display:none;">
+      ⏳ Carregando laudos...
+    </div>
+    <div id="consulta-erro" style="font-family:Arial,sans-serif;font-size:12px;color:#c0392b;padding:10px;display:none;"></div>
+
+    <div id="consulta-tabela" style="overflow-x:auto;"></div>
+
+    <div id="consulta-paginacao" style="display:flex;gap:8px;margin-top:12px;align-items:center;"></div>
+  </div>
 </div>
 
 <!-- LAUDO IMPRIMÍVEL -->
@@ -1131,6 +1191,19 @@ function montaPele() {
 }
 
 function gerarLaudo(){
+  obterNumeroLaudo().then(num => {
+    document.getElementById('display-num-laudo').textContent = num;
+    const idEl = document.getElementById('pIdExame');
+    if (idEl && !idEl.value) idEl.value = num;
+  }).catch(() => {});
+  // Pré-carrega número do laudo do Supabase assim que o laudo é gerado
+  obterNumeroLaudo().then(num => {
+    document.getElementById('display-num-laudo').textContent = num;
+    const idEl = document.getElementById('pIdExame');
+    if (idEl && !idEl.value) idEl.value = num;
+  }).catch(() => {
+    document.getElementById('display-num-laudo').textContent = 'Sem conexão';
+  });
   const nome=document.getElementById('pNome').value||'—';
   const prop=document.getElementById('pProprietario').value||'—';
   const esp=especie==='cao'?'CANINA':'FELINA';
@@ -1243,7 +1316,7 @@ ${peleHTML}
   </div>
 </div>
 <div id="sign-bar" style="margin-top:20px;padding:16px;background:#f4f6fa;border:1px solid #d0d8ec;border-radius:6px;">
-  
+
   <!-- Assinatura digital -->
   <div style="text-align:center;margin-bottom:14px;">
     <p style="font-family:Arial,sans-serif;font-size:12px;color:#444;margin-bottom:12px;">
@@ -1258,43 +1331,24 @@ ${peleHTML}
 
   <hr style="border:none;border-top:1px solid #d0d8ec;margin:14px 0;">
 
-  <!-- OneDrive -->
-  <div id="od-section">
-    <div id="od-login-area" style="text-align:center;">
-      <p style="font-family:Arial,sans-serif;font-size:12px;color:#555;margin-bottom:10px;">
-        Salvar laudo automaticamente no <strong>OneDrive</strong> — Pasta Resultados de Exames
-      </p>
-      <button class="ms-btn" onclick="msLogin()">
-        <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-          <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-          <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-        </svg>
-        Entrar com Microsoft
-      </button>
-    </div>
-
-    <div id="od-connected-area" style="display:none;">
-      <div class="od-bar">
-        <div>
-          <div class="od-user" id="od-username">—</div>
-          <div class="od-status">✅ Conectado ao OneDrive</div>
-          <a class="od-link" href="https://diasonline-my.sharepoint.com/:f:/g/personal/dnilson_diasonline_com_br/IgCvUCB7G-4kSKkRVnAB7r0mATKU0_oXFEL33V7OegGNifk?e=Bemdqx" target="_blank">
-            📁 Abrir pasta de resultados ↗
-          </a>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <button class="btn-save" id="btn-save-od" onclick="salvarNoOneDrive()">
-            ☁️ Salvar no OneDrive
-          </button>
-          <button onclick="msLogout()" style="background:transparent;color:#c0392b;border:1px solid #c0392b;padding:8px 14px;border-radius:4px;font-family:Arial,sans-serif;font-size:11px;cursor:pointer;">
-            Sair
-          </button>
-        </div>
+  <!-- Supabase Save -->
+  <div class="sb-bar">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:Arial,sans-serif;font-size:11px;color:#555;margin-bottom:4px;">Número do laudo:</div>
+        <span class="num-laudo" id="display-num-laudo">—</span>
       </div>
-      <div class="save-progress" id="od-progress"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-sb" id="btn-salvar-sb" onclick="salvarNoSupabase()">
+          ☁️ Salvar &amp; Registrar Laudo
+        </button>
+        <a href="https://qqamidwoqnpxlphvizgd.supabase.co" target="_blank"
+           style="font-family:Arial,sans-serif;font-size:11px;color:#1a3a6b;font-weight:600;text-decoration:none;">
+          📊 Ver todos os laudos ↗
+        </a>
+      </div>
     </div>
+    <div class="sb-progress" id="sb-progress"></div>
   </div>
 
 </div>`;
@@ -1303,6 +1357,217 @@ ${peleHTML}
   document.getElementById('app').style.display='none';
   document.getElementById('laudo-view').style.display='block';
   window.scrollTo(0,0);
+}
+
+
+// ===================== SUPABASE =====================
+const SB_URL = 'https://qqamidwoqnpxlphvizgd.supabase.co';
+const SB_KEY = 'sb_publishable_IoNe6dPv2g_1askWZioqvg_XxlHAFql';
+
+const sbFetch = (path, opts) => fetch(SB_URL + path, {
+  ...opts,
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    ...(opts && opts.headers),
+  }
+});
+
+async function obterNumeroLaudo() {
+  const ano = new Date().getFullYear();
+  const resp = await sbFetch('/rest/v1/rpc/proximo_numero_laudo', {
+    method: 'POST',
+    body: JSON.stringify({ p_ano: ano })
+  });
+  if (!resp.ok) throw new Error('Erro ao obter numero: ' + await resp.text());
+  const data = await resp.json();
+  const row = Array.isArray(data) ? data[0] : data;
+  return row.numero;
+}
+
+function detectarTipoExame() {
+  const tipos = [];
+  const temValor = ids => ids.some(id => { const el = document.getElementById('v_'+id); return el && el.value && el.value.trim() !== ''; });
+  if (temValor(['eritro','hemo','htc','vcm','hcm','chcm','rdw','ptp','leuc','linf_p','linf_a'])) tipos.push('hemograma');
+  if (temValor(['alt','ggt','fa','ureia','creat'])) tipos.push('bioquimica');
+  const temOD = document.getElementById('ot_od_amostra')?.value;
+  const temOE = document.getElementById('ot_oe_amostra')?.value;
+  if (temOD && temOD !== '— Nao coletado —') tipos.push('citologia_otologica');
+  if (temOE && temOE !== '— Nao coletado —') tipos.push('citologia_otologica');
+  if (document.getElementById('pk_tecnica')?.value || document.getElementById('pk_local')?.value) tipos.push('citologia_pele');
+  return tipos.length === 0 ? 'geral' : tipos.join('+');
+}
+
+function coletarValores(grupo) {
+  const exames = EXAMES[grupo];
+  if (!exames || !exames.length) return null;
+  const dados = {};
+  let temAlgo = false;
+  exames.forEach(ex => {
+    const el = document.getElementById('v_'+ex.id);
+    if (el && el.value && el.value.trim() !== '') {
+      dados[ex.id] = { valor: el.value, nome: ex.nome, unidade: ex.unidade };
+      temAlgo = true;
+    }
+  });
+  return temAlgo ? dados : null;
+}
+
+function montaCitologiaJSON() {
+  const gv = id => document.getElementById(id)?.value || '';
+  const result = {};
+  ['od','oe'].forEach(orelha => {
+    const amostra = gv('ot_'+orelha+'_amostra');
+    if (!amostra || amostra.indexOf('Nao coletado') >= 0 || amostra === '') return;
+    result[orelha] = {
+      amostra, macro: gv('ot_'+orelha+'_macro'),
+      dir_malassezia: gv('ot_'+orelha+'_dir_malassezia'),
+      dir_cocos: gv('ot_'+orelha+'_dir_cocos'),
+      dir_bast: gv('ot_'+orelha+'_dir_bast'),
+      dir_acaros: gv('ot_'+orelha+'_dir_acaros'),
+      cor_malassezia: gv('ot_'+orelha+'_cor_malassezia'),
+      cor_cocos: gv('ot_'+orelha+'_cor_cocos'),
+      coloracao: gv('ot_'+orelha+'_coloracao'),
+      obs: gv('ot_'+orelha+'_obs'),
+    };
+  });
+  result.conclusao = gv('ot_conclusao');
+  return (Object.keys(result).length > 1 || result.conclusao) ? result : null;
+}
+
+function montaPeleJSON() {
+  const gv = id => document.getElementById(id)?.value || '';
+  const local = gv('pk_local'), tecnica = gv('pk_tecnica'), tricoTec = gv('pk_trico_tecnica');
+  if (!local && !tecnica && !tricoTec) return null;
+  return {
+    local, lesao: gv('pk_lesao'), tecnica, macro: gv('pk_macro'),
+    dir_malassezia: gv('pk_dir_malassezia'), dir_hifas: gv('pk_dir_hifas'),
+    dir_demodex: gv('pk_dir_demodex'), dir_sarcoptes: gv('pk_dir_sarcoptes'),
+    trico_tecnica: tricoTec, trico_fase: gv('pk_trico_fase'),
+    trico_demodex: gv('pk_trico_demodex'),
+    coloracao: gv('pk_coloracao'),
+    cor_malassezia: gv('pk_cor_malassezia'), cor_neutro: gv('pk_cor_neutro'),
+    cor_atip: gv('pk_cor_atip'), cor_hifas: gv('pk_cor_hifas'),
+    obs: gv('pk_obs'), conclusao: gv('pk_conclusao'),
+  };
+}
+
+async function salvarNoSupabase() {
+  const btn = document.getElementById('btn-salvar-sb');
+  const progress = document.getElementById('sb-progress');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  progress.style.color = '#555';
+  try {
+    progress.textContent = 'Gerando numero do laudo...';
+    const numLaudo = await obterNumeroLaudo();
+    const ano = new Date().getFullYear();
+    const seq = parseInt(numLaudo.split('H')[1]);
+    document.getElementById('display-num-laudo').textContent = numLaudo;
+    const idEl = document.getElementById('pIdExame');
+    if (idEl && !idEl.value) idEl.value = numLaudo;
+    const gv = id => document.getElementById(id)?.value || '';
+    const dataColetaRaw = gv('pData');
+    const brancaKey = (typeof modoLeuco !== 'undefined' && modoLeuco === '5p') ? 'serie_branca_5p' : 'serie_branca_3p';
+    const payload = {
+      numero_laudo: numLaudo, ano, sequencia: seq,
+      tipo_exame: detectarTipoExame(),
+      data_coleta: dataColetaRaw ? new Date(dataColetaRaw).toISOString() : null,
+      animal: gv('pNome').toUpperCase() || null,
+      especie: (typeof especie !== 'undefined' && especie === 'gato') ? 'FELINA' : 'CANINA',
+      raca: gv('pRaca').toUpperCase() || null,
+      sexo: gv('pSexo') === 'M' ? 'Macho' : 'Femea',
+      idade: gv('pIdade') || null,
+      microchip: gv('pMicrochip') || null,
+      responsavel: gv('pProprietario') || null,
+      mv_nome: gv('pMV') || 'Dr. Dnilson Carlos Dias',
+      mv_crmv: gv('pCRMV') || 'CRMV 74.780 SP',
+      serie_vermelha: coletarValores('serie_vermelha'),
+      serie_branca: coletarValores(brancaKey),
+      plaquetas: coletarValores('plaquetas'),
+      bioquimica: coletarValores('bioquimica'),
+      citologia_ot: montaCitologiaJSON(),
+      citologia_pele: montaPeleJSON(),
+      obs_hematologica: gv('obsH') || null,
+      obs_bioquimica: gv('obsB') || null,
+      assinado: false,
+    };
+    progress.textContent = 'Salvando no banco de dados...';
+    const resp = await sbFetch('/rest/v1/laudos', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const saved = await resp.json();
+    const row = Array.isArray(saved) ? saved[0] : saved;
+    progress.innerHTML = '<span style="color:#2d6a2d">Laudo <strong>' + numLaudo + '</strong> registrado! ID: ' + (row?.id || '') + '</span>';
+    btn.textContent = 'Registrado!';
+    btn.style.background = '#2e7d32';
+    setTimeout(() => {
+      if (confirm('Laudo ' + numLaudo + ' registrado!
+
+Deseja iniciar um novo laudo?')) resetarFormulario();
+    }, 1500);
+  } catch(e) {
+    console.error('Supabase error:', e);
+    progress.innerHTML = '<span style="color:#c0392b">Erro: ' + (e.message || e) + '</span>';
+    btn.disabled = false;
+    btn.textContent = 'Salvar & Registrar Laudo';
+    btn.style.background = '#1a3a6b';
+  }
+}
+
+function resetarFormulario() {
+  document.querySelectorAll('#app input, #app select').forEach(el => {
+    if (el.type === 'datetime-local') {
+      const agora = new Date();
+      agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+      el.value = agora.toISOString().slice(0,16);
+    } else if (el.id==='pMV')  { el.value='Dr. Dnilson Carlos Dias'; }
+    else if (el.id==='pCRMV') { el.value='CRMV 74.780 SP'; }
+    else if (el.id==='obsH')  { el.value='Morfologia eritrocitica preservada. Pesquisa de hematozoarios negativa.'; }
+    else { el.value=''; }
+  });
+  if (typeof setEsp === 'function') setEsp('cao');
+  setTab(0);
+  document.getElementById('laudo-view').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const btn = document.getElementById('btn-salvar-sb');
+  if (btn) { btn.disabled=false; btn.textContent='Salvar & Registrar Laudo'; btn.style.background='#1a3a6b'; }
+  const prog = document.getElementById('sb-progress');
+  if (prog) prog.innerHTML = '';
+  document.getElementById('display-num-laudo').textContent = '';
+  const ba = document.getElementById('btn-assinar');
+  if (ba) { ba.disabled=false; ba.textContent='Assinar Digitalmente'; ba.style.background='#1a3a6b'; }
+  document.getElementById('sign-status').textContent = '';
+  window.scrollTo(0,0);
+}
+
+// ===================== MODO LEUCOGRAMA =====================
+let modoLeuco = '3p';
+let faIdade   = 'adulto';
+
+function setModoLeuco(modo) {
+  modoLeuco = modo;
+  document.getElementById('btn3p').className = 'sb' + (modo==='3p' ? ' cao sel' : '');
+  document.getElementById('btn5p').className = 'sb' + (modo==='5p' ? ' cao sel' : '');
+  EXAMES.serie_branca = modo === '3p' ? EXAMES.serie_branca_3p : EXAMES.serie_branca_5p;
+  buildRows('serie_branca', EXAMES.serie_branca);
+}
+
+function setFaIdade(faixa) {
+  faIdade = faixa;
+  document.getElementById('btnFaAdulto').className  = 'sb' + (faixa==='adulto'  ? ' cao sel' : '');
+  document.getElementById('btnFaFilhote').className = 'sb' + (faixa==='filhote' ? ' cao sel' : '');
+  const fa = EXAMES.bioquimica.find(e => e.id === 'fa');
+  if (fa) {
+    fa.refCao = faixa === 'filhote' ? [10, 156] : [10, 92];
+    const rc = document.getElementById('rc_fa');
+    if (rc) rc.textContent = fmtRef(getRef(fa));
+    updateFlag('fa');
+  }
 }
 
 
@@ -1447,325 +1712,210 @@ function selecionarArquivo(accept) {
 
 
 
-// ===================== MICROSOFT / ONEDRIVE =====================
-const MSAL_CONFIG = {
-  auth: {
-    clientId: '84fb2c9e-dbad-4fa3-83c8-562e536958e3',
-    authority: 'https://login.microsoftonline.com/cdfff7ca-10e5-4552-8db0-49005d608d17',
-    redirectUri: 'https://almoavet.github.io/almoa-laudos/',
-  },
-  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
-};
 
-const SCOPES = ['User.Read', 'Files.ReadWrite.All'];
-// Folder ID from the shared link (drive item)
-const ONEDRIVE_FOLDER_PATH = '/me/drive/root:/RESULTADOS DE EXAMES PRÓPRIOS';
+// ===================== CONSULTA DE LAUDOS =====================
+let consultaLaudos = [];
+let consultaFiltrados = [];
+let consultaPagina = 0;
+const CONSULTA_POR_PAG = 20;
 
-let msalInstance = null;
-let msAccount = null;
-let msToken = null;
+async function carregarLaudos() {
+  const loading = document.getElementById('consulta-loading');
+  const erro    = document.getElementById('consulta-erro');
+  const tabela  = document.getElementById('consulta-tabela');
+  const stats   = document.getElementById('consulta-stats');
+  const ano     = document.getElementById('busca-ano')?.value || new Date().getFullYear();
 
-function initMsal() {
+  loading.style.display = 'block';
+  erro.style.display    = 'none';
+  tabela.innerHTML      = '';
+  stats.innerHTML       = '';
+
   try {
-    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-    // Handle redirect response on page load
-    msalInstance.handleRedirectPromise().then(resp => {
-      if (resp && resp.account) {
-        msAccount = resp.account;
-        msToken = resp.accessToken;
-        setOdConnected(msAccount.name || msAccount.username);
-      }
-    }).catch(e => console.warn('MSAL redirect:', e));
+    // Busca todos os laudos do ano ordenados por data desc
+    const resp = await sbFetch(
+      '/rest/v1/laudos?ano=eq.' + ano +
+      '&order=sequencia.desc&limit=500' +
+      '&select=id,numero_laudo,data_emissao,animal,raca,especie,responsavel,tipo_exame,assinado,sequencia',
+      { method: 'GET' }
+    );
+    if (!resp.ok) throw new Error('Erro ao buscar laudos: ' + resp.status);
+    consultaLaudos = await resp.json();
+    consultaPagina = 0;
+    filtrarLaudos();
+    renderStats();
   } catch(e) {
-    console.warn('MSAL init failed:', e);
+    erro.textContent = 'Erro ao carregar laudos: ' + e.message;
+    erro.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
   }
 }
 
-async function msLogin() {
-  if (!msalInstance) initMsal();
+function filtrarLaudos() {
+  const texto = (document.getElementById('busca-texto')?.value || '').toLowerCase();
+  const tipo  = document.getElementById('busca-tipo')?.value || '';
+  consultaFiltrados = consultaLaudos.filter(l => {
+    const matchTexto = !texto ||
+      (l.animal || '').toLowerCase().includes(texto) ||
+      (l.responsavel || '').toLowerCase().includes(texto) ||
+      (l.numero_laudo || '').toLowerCase().includes(texto) ||
+      (l.raca || '').toLowerCase().includes(texto);
+    const matchTipo = !tipo || (l.tipo_exame || '').includes(tipo);
+    return matchTexto && matchTipo;
+  });
+  consultaPagina = 0;
+  renderTabela();
+  renderPaginacao();
+}
+
+function renderStats() {
+  const stats = document.getElementById('consulta-stats');
+  const total = consultaLaudos.length;
+  const tipoCount = {};
+  consultaLaudos.forEach(l => {
+    (l.tipo_exame || 'geral').split('+').forEach(t => {
+      tipoCount[t] = (tipoCount[t] || 0) + 1;
+    });
+  });
+  const ano = document.getElementById('busca-ano')?.value || new Date().getFullYear();
+  const cards = [
+    { num: total, label: 'Total ' + ano },
+    { num: tipoCount['hemograma'] || 0,           label: 'Hemogramas' },
+    { num: tipoCount['bioquimica'] || 0,           label: 'Bioquímicas' },
+    { num: tipoCount['citologia_otologica'] || 0,  label: 'Citol. Otol.' },
+    { num: tipoCount['citologia_pele'] || 0,        label: 'Citol. Pele' },
+  ];
+  stats.innerHTML = cards.map(c =>
+    '<div class="stat-card"><div class="stat-num">' + c.num + '</div><div class="stat-label">' + c.label + '</div></div>'
+  ).join('');
+}
+
+function badgeTipo(tipo) {
+  if (!tipo) return '<span class="badge badge-misto">—</span>';
+  return tipo.split('+').map(t => {
+    if (t.includes('hemograma'))          return '<span class="badge badge-hemo">Hemo</span>';
+    if (t.includes('bioquimica'))          return '<span class="badge badge-bio">Bio</span>';
+    if (t.includes('citologia_otologica')) return '<span class="badge badge-oto">Otol.</span>';
+    if (t.includes('citologia_pele'))      return '<span class="badge badge-pele">Pele</span>';
+    return '<span class="badge badge-misto">' + t + '</span>';
+  }).join(' ');
+}
+
+function fmtDataLaudo(iso) {
+  if (!iso) return '—';
   try {
-    // Try silent first
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-      const silentReq = { scopes: SCOPES, account: accounts[0] };
-      const resp = await msalInstance.acquireTokenSilent(silentReq);
-      msAccount = resp.account;
-      msToken = resp.accessToken;
-      setOdConnected(msAccount.name || msAccount.username);
-      return;
-    }
-    // Popup login
-    const resp = await msalInstance.loginPopup({ scopes: SCOPES });
-    msAccount = resp.account;
-    // Get token
-    const tokenResp = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: msAccount });
-    msToken = tokenResp.accessToken;
-    setOdConnected(msAccount.name || msAccount.username);
-  } catch(e) {
-    console.error('Login error:', e);
-    alert('Erro ao entrar com Microsoft: ' + (e.message || e));
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  } catch { return iso; }
+}
+
+function renderTabela() {
+  const tabela = document.getElementById('consulta-tabela');
+  const inicio = consultaPagina * CONSULTA_POR_PAG;
+  const pagina = consultaFiltrados.slice(inicio, inicio + CONSULTA_POR_PAG);
+
+  if (consultaFiltrados.length === 0) {
+    tabela.innerHTML = '<div style="font-family:Arial,sans-serif;font-size:12px;color:#888;padding:20px;text-align:center;">Nenhum laudo encontrado.</div>';
+    return;
   }
+
+  let html = '<div class="laudo-row laudo-row-hdr">'
+    + '<span>Nº Laudo</span><span>Animal / Raça</span><span>Responsável</span>'
+    + '<span>Tipo</span><span>Data</span><span></span></div>';
+
+  pagina.forEach(l => {
+    html += '<div class="laudo-row">'
+      + '<span class="laudo-num">' + (l.numero_laudo || '—') + '</span>'
+      + '<span><strong>' + (l.animal || '—') + '</strong><br><small style="color:#888">' + (l.raca || '') + ' · ' + (l.especie || '') + '</small></span>'
+      + '<span>' + (l.responsavel || '—') + '</span>'
+      + '<span>' + badgeTipo(l.tipo_exame) + '</span>'
+      + '<span style="font-size:10.5px;color:#666">' + fmtDataLaudo(l.data_emissao) + '</span>'
+      + '<span><button class="btn-ver" onclick="verLaudo(' + l.id + ')">Ver</button></span>'
+      + '</div>';
+  });
+  tabela.innerHTML = html;
 }
 
-function msLogout() {
-  if (msalInstance && msAccount) {
-    msalInstance.logoutPopup({ account: msAccount });
-  }
-  msAccount = null;
-  msToken = null;
-  document.getElementById('od-login-area').style.display = 'block';
-  document.getElementById('od-connected-area').style.display = 'none';
+function renderPaginacao() {
+  const pag   = document.getElementById('consulta-paginacao');
+  const total = consultaFiltrados.length;
+  const nPags = Math.ceil(total / CONSULTA_POR_PAG);
+  if (nPags <= 1) { pag.innerHTML = ''; return; }
+  pag.innerHTML =
+    '<button class="pg-btn" onclick="mudaPagina(-1)" ' + (consultaPagina===0?'disabled':'') + '>← Anterior</button>'
+    + '<span class="pg-info">Página ' + (consultaPagina+1) + ' de ' + nPags + ' (' + total + ' laudos)</span>'
+    + '<button class="pg-btn" onclick="mudaPagina(1)" ' + (consultaPagina>=nPags-1?'disabled':'') + '>Próxima →</button>';
 }
 
-function setOdConnected(name) {
-  document.getElementById('od-username').textContent = name;
-  document.getElementById('od-login-area').style.display = 'none';
-  document.getElementById('od-connected-area').style.display = 'block';
+function mudaPagina(dir) {
+  const nPags = Math.ceil(consultaFiltrados.length / CONSULTA_POR_PAG);
+  consultaPagina = Math.max(0, Math.min(nPags-1, consultaPagina + dir));
+  renderTabela();
+  renderPaginacao();
 }
 
-async function getValidToken() {
-  if (!msalInstance || !msAccount) throw new Error('Não autenticado');
+async function verLaudo(id) {
   try {
-    const resp = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: msAccount });
-    msToken = resp.accessToken;
-    return msToken;
-  } catch(e) {
-    const resp = await msalInstance.acquireTokenPopup({ scopes: SCOPES });
-    msToken = resp.accessToken;
-    return msToken;
-  }
-}
+    const resp = await sbFetch('/rest/v1/laudos?id=eq.' + id + '&select=*', { method: 'GET' });
+    if (!resp.ok) throw new Error('Erro ' + resp.status);
+    const rows = await resp.json();
+    const l = rows[0];
+    if (!l) return alert('Laudo não encontrado.');
 
-async function salvarNoOneDrive() {
-  const btn = document.getElementById('btn-save-od');
-  const progress = document.getElementById('od-progress');
-  btn.disabled = true;
-  progress.innerHTML = '⏳ Gerando PDF do laudo...';
+    // Monta modal com dados do laudo
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:8px;padding:24px;max-width:680px;width:95%;max-height:85vh;overflow-y:auto;font-family:Arial,sans-serif;font-size:12px;';
 
-  try {
-    const token = await getValidToken();
+    const tipoLabel = (l.tipo_exame||'').split('+').join(' + ');
+    box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">'
+      + '<div><div style="font-size:16px;font-weight:700;color:#1a3a6b;">' + l.numero_laudo + '</div>'
+      + '<div style="color:#888;font-size:11px;">' + tipoLabel + ' — ' + fmtDataLaudo(l.data_emissao) + '</div></div>'
+      + '<button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="background:#eee;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:700;">✕ Fechar</button></div>'
+      + '<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">'
+      + '<tr style="background:#1a3a6b;color:#fff;"><th style="padding:5px 8px;text-align:left;font-size:10px;">Campo</th><th style="padding:5px 8px;text-align:left;font-size:10px;">Valor</th></tr>'
+      + [['Animal', l.animal||'—'], ['Raça', l.raca||'—'], ['Espécie', l.especie||'—'],
+         ['Sexo', l.sexo||'—'], ['Idade', l.idade||'—'], ['Microchip', l.microchip||'—'],
+         ['Responsável', l.responsavel||'—'], ['MV', (l.mv_nome||'')+ ' | '+(l.mv_crmv||'')],
+         ['Data coleta', fmtDataLaudo(l.data_coleta)], ['Assinado', l.assinado ? '✅ Sim' : '❌ Não'],
+        ].map((r,i)=>'<tr style="background:'+(i%2===0?'#f4f6fa':'#fff')+'"><td style="padding:4px 8px;color:#555;font-weight:700;">'
+          +r[0]+'</td><td style="padding:4px 8px;">'+r[1]+'</td></tr>').join('')
+      + '</table>';
 
-    // Generate HTML blob of the laudo
-    const laudoEl = document.getElementById('laudo-content');
-    if (!laudoEl || !laudoEl.innerHTML.trim()) {
-      throw new Error('Nenhum laudo gerado para salvar.');
-    }
-
-    // Build self-contained HTML for the file
-    const nomeAnimal = (document.getElementById('pNome')?.value || 'animal').toUpperCase().replace(/\s+/g,'_');
-    const idExame   = (document.getElementById('pIdExame')?.value || '').replace(/\s+/g,'_');
-    const agora     = new Date();
-    const dataStr   = agora.toISOString().slice(0,10);
-    const horaStr   = agora.toTimeString().slice(0,5).replace(':','h');
-    const nomeArq   = `Laudo_${nomeAnimal}_${idExame ? idExame+'_' : ''}${dataStr}_${horaStr}.html`;
-
-    progress.innerHTML = `⏳ Salvando <strong>${nomeArq}</strong> no OneDrive...`;
-
-    // Build file content (laudo HTML with inline styles)
-    const htmlContent = `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8">
-<title>Laudo — ${nomeAnimal} — ${dataStr}</title>
-<style>
-body{font-family:'Courier New',monospace;margin:20px;color:#111;}
-.laudo-header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:14px;border-bottom:2.5px solid #1a3a6b;margin-bottom:16px;}
-.laudo-clinica{text-align:right;font-size:10px;color:#555;line-height:1.75;}
-.laudo-clinica strong{display:block;font-size:12px;color:#1a3a6b;font-weight:700;}
-.laudo-ficha{border:1px solid #ccd4e8;padding:10px 14px;margin-bottom:14px;background:#fbfcfe;}
-.ficha-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;}
-.ficha-item{font-size:11px;color:#333;}
-.laudo-secao-titulo{font-size:11px;font-weight:700;text-transform:uppercase;background:#2c2c2c;color:#fff;padding:5px 12px;margin-bottom:0;}
-.laudo-table{width:100%;border-collapse:collapse;font-size:11px;}
-.laudo-table th{background:#e8edf5;color:#1a3a6b;font-size:9px;text-transform:uppercase;padding:5px 10px;text-align:left;border:.5px solid #c8d2e8;}
-.laudo-table td{padding:5px 10px;border:.5px solid #dde4f2;}
-.laudo-table tr:nth-child(even) td{background:#f7f9fd;}
-.laudo-table td.H{color:#c0392b;font-weight:700;}
-.laudo-table td.L{color:#2471a3;font-weight:700;}
-.laudo-obs{font-size:10px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;margin-top:6px;font-style:italic;}
-.laudo-footer{margin-top:30px;padding-top:14px;border-top:1px solid #dde4f2;}
-.footer-disclaimer{font-size:9.5px;color:#888;text-align:center;padding-top:10px;border-top:.5px solid #ddd;font-style:italic;line-height:1.7;}
-.sig-valid{background:#eaf5ea;border:1.5px solid #4caf50;border-radius:5px;padding:7px 12px;font-size:9.5px;color:#2d6a2d;line-height:1.7;}
-</style>
-</head><body>
-${laudoEl.innerHTML}
-</body></html>`;
-
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const arrayBuffer = await blob.arrayBuffer();
-
-    // Upload to OneDrive folder
-    // First ensure folder exists, then upload
-    const uploadUrl = `https://graph.microsoft.com/v1.0${ONEDRIVE_FOLDER_PATH}/${encodeURIComponent(nomeArq)}:/content`;
-
-    const uploadResp = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'text/html',
-      },
-      body: arrayBuffer
+    // Resultados por seção
+    const secoes = [
+      { key: 'serie_vermelha', label: 'Série Vermelha' },
+      { key: 'serie_branca',   label: 'Série Branca' },
+      { key: 'plaquetas',      label: 'Plaquetas' },
+      { key: 'bioquimica',     label: 'Bioquímica' },
+    ];
+    secoes.forEach(sec => {
+      const dados = l[sec.key];
+      if (!dados || Object.keys(dados).length === 0) return;
+      box.innerHTML += '<div style="background:#1a3a6b;color:#fff;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-top:10px;">'
+        + sec.label + '</div>'
+        + '<table style="width:100%;border-collapse:collapse;">'
+        + Object.entries(dados).map(([k,v], i) =>
+          '<tr style="background:'+(i%2===0?'#f4f6fa':'#fff')+'"><td style="padding:3px 8px;color:#555;font-size:11px;">'+(v.nome||k)+'</td>'
+          +'<td style="padding:3px 8px;font-weight:700;font-size:11px;">'+(v.valor||'—')+'</td>'
+          +'<td style="padding:3px 8px;color:#888;font-size:10px;">'+(v.unidade||'')+'</td></tr>'
+        ).join('') + '</table>';
     });
 
-    if (!uploadResp.ok) {
-      const err = await uploadResp.json();
-      // If folder not found, try to create it first
-      if (uploadResp.status === 404) {
-        progress.innerHTML = '⏳ Criando pasta no OneDrive...';
-        await criarPastaOneDrive(token);
-        // Retry upload
-        const retry = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'text/html' },
-          body: arrayBuffer
-        });
-        if (!retry.ok) throw new Error('Erro ao fazer upload após criar pasta.');
-      } else {
-        throw new Error(err.error?.message || `HTTP ${uploadResp.status}`);
-      }
-    }
+    if (l.obs_hematologica) box.innerHTML += '<div style="margin-top:8px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Hematológica:</b> ' + l.obs_hematologica + '</div>';
+    if (l.obs_bioquimica)   box.innerHTML += '<div style="margin-top:4px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Bioquímica:</b> ' + l.obs_bioquimica + '</div>';
 
-    progress.innerHTML = `✅ Laudo salvo com sucesso! <a href="https://diasonline-my.sharepoint.com/:f:/g/personal/dnilson_diasonline_com_br/IgCvUCB7G-4kSKkRVnAB7r0mATKU0_oXFEL33V7OegGNifk?e=Bemdqx" target="_blank" style="color:#0078d4;font-weight:700;">Abrir pasta ↗</a>`;
-    progress.style.color = '#2d6a2d';
-
-    btn.textContent = '✅ Salvo!';
-    btn.style.background = '#2e7d32';
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      if (confirm('Laudo salvo no OneDrive! Deseja iniciar um novo laudo?')) {
-        resetarFormulario();
-      }
-    }, 1500);
-
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
   } catch(e) {
-    console.error('OneDrive error:', e);
-    progress.innerHTML = '❌ Erro: ' + (e.message || e);
-    progress.style.color = '#c0392b';
-    btn.disabled = false;
-    btn.textContent = '☁️ Salvar no OneDrive';
+    alert('Erro ao carregar laudo: ' + e.message);
   }
 }
 
-async function criarPastaOneDrive(token) {
-  const resp = await fetch('https://graph.microsoft.com/v1.0/me/drive/root/children', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      name: 'RESULTADOS DE EXAMES PRÓPRIOS',
-      folder: {},
-      '@microsoft.graph.conflictBehavior': 'rename'
-    })
-  });
-  return resp.ok;
-}
 
-function resetarFormulario() {
-  // Limpa todos os inputs e selects do formulário
-  document.querySelectorAll('#app input, #app select').forEach(el => {
-    if (el.type === 'datetime-local') {
-      const agora = new Date();
-      agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-      el.value = agora.toISOString().slice(0,16);
-    } else if (el.id === 'pMV') {
-      el.value = 'Dr. Dnilson Carlos Dias';
-    } else if (el.id === 'pCRMV') {
-      el.value = 'CRMV 74.780 SP';
-    } else if (el.id === 'obsH') {
-      el.value = 'Morfologia eritrocitária preservada. Pesquisa de hematozoários negativa.';
-    } else {
-      el.value = '';
-    }
-  });
-  // Reset espécie para cão
-  setEsp('cao');
-  // Volta para aba 1
-  setTab(0);
-  // Esconde laudo
-  document.getElementById('laudo-view').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  // Reset botão salvar
-  const btnSave = document.getElementById('btn-save-od');
-  if (btnSave) { btnSave.disabled = false; btnSave.textContent = '☁️ Salvar no OneDrive'; btnSave.style.background = '#0078d4'; }
-  const prog = document.getElementById('od-progress');
-  if (prog) { prog.innerHTML = ''; prog.style.color = '#555'; }
-  // Reset assinatura
-  const btnAssinar = document.getElementById('btn-assinar');
-  if (btnAssinar) { btnAssinar.disabled = false; btnAssinar.textContent = '🔏 Assinar Digitalmente'; btnAssinar.style.background = '#1a3a6b'; }
-  document.getElementById('sign-status').textContent = '';
-  window.scrollTo(0,0);
-}
-
-// Init MSAL on page load
-// Carrega MSAL dinamicamente e inicializa após o carregamento
-function loadMSAL() {
-  const script = document.createElement('script');
-  script.src = 'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js';
-  script.onload = function() {
-    console.log('MSAL carregado com sucesso');
-    initMsal();
-  };
-  script.onerror = function() {
-    // Tenta CDN alternativo
-    console.warn('CDN principal falhou, tentando alternativo...');
-    const script2 = document.createElement('script');
-    script2.src = 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js';
-    script2.onload = function() {
-      console.log('MSAL carregado via CDN alternativo');
-      initMsal();
-    };
-    script2.onerror = function() {
-      console.error('Não foi possível carregar MSAL. Verifique sua conexão com a internet.');
-      const loginArea = document.getElementById('od-login-area');
-      if (loginArea) {
-        loginArea.innerHTML = '<p style="font-family:Arial,sans-serif;font-size:11px;color:#c0392b;text-align:center;">⚠️ Não foi possível carregar o módulo de autenticação Microsoft.<br>Verifique sua conexão com a internet e recarregue a página.</p>';
-      }
-    };
-    document.head.appendChild(script2);
-  };
-  document.head.appendChild(script);
-}
-
-// Inicializa quando a página carrega
-window.addEventListener('load', function() {
-  loadMSAL();
-});
-
-
-// ===================== MODO LEUCOGRAMA =====================
-let modoLeuco = '3p';  // '3p' ou '5p'
-let faIdade   = 'adulto'; // 'adulto' ou 'filhote'
-
-function setModoLeuco(modo) {
-  modoLeuco = modo;
-  // Update buttons
-  document.getElementById('btn3p').className = 'sb' + (modo==='3p' ? ' cao sel' : '');
-  document.getElementById('btn5p').className = 'sb' + (modo==='5p' ? ' cao sel' : '');
-  // Rebuild the serie_branca EXAMES list
-  EXAMES.serie_branca = modo === '3p'
-    ? EXAMES.serie_branca_3p
-    : EXAMES.serie_branca_5p;
-  // Clear and rebuild rows
-  buildRows('serie_branca', EXAMES.serie_branca);
-}
-
-function setFaIdade(faixa) {
-  faIdade = faixa;
-  document.getElementById('btnFaAdulto').className  = 'sb' + (faixa==='adulto'  ? ' cao sel' : '');
-  document.getElementById('btnFaFilhote').className = 'sb' + (faixa==='filhote' ? ' cao sel' : '');
-  // Update FA reference
-  const fa = EXAMES.bioquimica.find(e => e.id === 'fa');
-  if (fa) {
-    fa.refCao = faixa === 'filhote' ? [10, 156] : [10, 92];
-    // refresh ref display and flags
-    const rc = document.getElementById('rc_fa');
-    if (rc) rc.textContent = fmtRef(getRef(fa));
-    updateFlag('fa');
-  }
-}
-
-// Also update montaTabela to use active serie_branca
 // ===================== INIT =====================
 window.onload=function(){
   const agora=new Date();
