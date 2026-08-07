@@ -1196,13 +1196,6 @@ function montaPele() {
 }
 
 function gerarLaudo(){
-  obterNumeroLaudo().then(num => {
-    document.getElementById('display-num-laudo').textContent = num;
-    const idEl = document.getElementById('pIdExame');
-    if (idEl) idEl.value = num;
-  }).catch(() => {
-    document.getElementById('display-num-laudo').textContent = 'Sem conexão';
-  });
   const nome=document.getElementById('pNome').value||'—';
   const prop=document.getElementById('pProprietario').value||'—';
   const esp=especie==='cao'?'CANINA':'FELINA';
@@ -1356,6 +1349,14 @@ ${peleHTML}
   document.getElementById('app').style.display='none';
   document.getElementById('laudo-view').style.display='block';
   window.scrollTo(0,0);
+  // Busca número do laudo após exibir (não bloqueia renderização)
+  obterNumeroLaudo().then(function(num){
+    document.getElementById('display-num-laudo').textContent = num;
+    var idEl = document.getElementById('pIdExame');
+    if (idEl) idEl.value = num;
+  }).catch(function(){
+    document.getElementById('display-num-laudo').textContent = 'Sem conexão';
+  });
 }
 
 
@@ -1505,9 +1506,7 @@ async function salvarNoSupabase() {
     btn.textContent = 'Registrado!';
     btn.style.background = '#2e7d32';
     setTimeout(() => {
-      if (confirm('Laudo ' + numLaudo + ' registrado!
-
-Deseja iniciar um novo laudo?')) resetarFormulario();
+      if (confirm('Laudo ' + numLaudo + ' registrado!\n\nDeseja iniciar um novo laudo?')) resetarFormulario();
     }, 1500);
   } catch(e) {
     console.error('Supabase error:', e);
@@ -1854,6 +1853,11 @@ function mudaPagina(dir) {
   renderPaginacao();
 }
 
+function fecharModal(){
+  var m=document.getElementById('almoa-modal');
+  if(m) m.remove();
+}
+
 async function verLaudo(id) {
   try {
     const resp = await sbFetch('/rest/v1/laudos?id=eq.' + id + '&select=*', { method: 'GET' });
@@ -1872,7 +1876,7 @@ async function verLaudo(id) {
     box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">'
       + '<div><div style="font-size:16px;font-weight:700;color:#1a3a6b;">' + l.numero_laudo + '</div>'
       + '<div style="color:#888;font-size:11px;">' + tipoLabel + ' — ' + fmtDataLaudo(l.data_emissao) + '</div></div>'
-      + '<button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="background:#eee;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:700;">✕ Fechar</button></div>'
+      + '<button onclick="fecharModal()" style="background:#eee;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:700;">&times; Fechar</button></div>'
       + '<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">'
       + '<tr style="background:#1a3a6b;color:#fff;"><th style="padding:5px 8px;text-align:left;font-size:10px;">Campo</th><th style="padding:5px 8px;text-align:left;font-size:10px;">Valor</th></tr>'
       + [['Animal', l.animal||'—'], ['Raça', l.raca||'—'], ['Espécie', l.especie||'—'],
