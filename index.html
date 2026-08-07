@@ -133,7 +133,6 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
   .laudo-wrap{padding:15px 20px;}
 }
 </style>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 </head>
 <body>
 
@@ -195,6 +194,11 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
     <div id="serie_vermelha"></div>
 
     <div class="sec-title">Série Branca — Leucograma</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="font-family:Arial,sans-serif;font-size:11px;color:#555;font-weight:700;">Modo do diferencial:</span>
+      <button class="sb" id="btn3p" onclick="setModoLeuco('3p')" style="padding:5px 14px;font-size:11px;">🔬 3 partes (LYM / MID / GRA)</button>
+      <button class="sb" id="btn5p" onclick="setModoLeuco('5p')" style="padding:5px 14px;font-size:11px;">🔬 5 partes (diferencial completo)</button>
+    </div>
     <div class="row-hdr">
       <div class="col-hdr">Parâmetro</div>
       <div class="col-hdr">Resultado</div>
@@ -225,6 +229,11 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
   <!-- BIOQUÍMICA -->
   <div class="panel" id="tab2">
     <div class="sec-title first-sec">Bioquímica Sérica — Análise Automatizada</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="font-family:Arial,sans-serif;font-size:11px;color:#555;font-weight:700;">Referência FA — faixa etária:</span>
+      <button class="sb" id="btnFaAdulto" onclick="setFaIdade('adulto')" style="padding:5px 14px;font-size:11px;">Acima de 1 ano (10–92 U/L)</button>
+      <button class="sb" id="btnFaFilhote" onclick="setFaIdade('filhote')" style="padding:5px 14px;font-size:11px;">Até 12 meses (10–156 U/L)</button>
+    </div>
     <div class="row-hdr">
       <div class="col-hdr">Parâmetro</div>
       <div class="col-hdr">Resultado</div>
@@ -781,35 +790,53 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
 // ===================== DADOS DOS EXAMES =====================
 const EXAMES = {
   serie_vermelha: [
-    {id:'eritro',  nome:'Eritrócitos',         unidade:'milhões/mm³', refCao:[5.50,8.50],   refGat:[5.00,10.00]},
+    {id:'eritro',  nome:'Eritrócitos',         unidade:'milhões/mm³', refCao:[5.50,8.00],   refGat:[5.00,10.00]},
     {id:'hemo',    nome:'Hemoglobina',          unidade:'g/dL',        refCao:[12.0,18.0],   refGat:[8.0,15.0]},
     {id:'htc',     nome:'Hematócrito',          unidade:'%',           refCao:[37.0,55.0],   refGat:[24.0,45.0]},
     {id:'vcm',     nome:'VCM',                  unidade:'fL',          refCao:[60.0,77.0],   refGat:[39.0,55.0]},
-    {id:'hcm',     nome:'HCM',                  unidade:'pg',          refCao:[19.5,24.5],   refGat:[13.0,17.0]},
+    {id:'hcm',     nome:'HCM',                  unidade:'pg',          refCao:[19.0,24.0],   refGat:[13.0,17.0]},
     {id:'chcm',    nome:'CHCM',                 unidade:'%',           refCao:[32.0,36.0],   refGat:[30.0,36.0]},
     {id:'rdw',     nome:'RDW',                  unidade:'%',           refCao:[12.0,16.0],   refGat:[14.0,18.0]},
-    {id:'ptp',     nome:'Proteína Total Plasmática', unidade:'g/dL',  refCao:[6.0,8.0],     refGat:[6.0,7.5]},
+    {id:'ptp',     nome:'Proteína Total Plasmática', unidade:'g/dL',  refCao:[5.5,8.0],     refGat:[6.0,7.5]},
     {id:'eritrob', nome:'Eritroblastos',        unidade:'/100 leuc.',  refCao:[0,0],         refGat:[0,0], opt:true},
   ],
-  serie_branca: [
-    {id:'leuc',    nome:'Leucócitos Totais',    unidade:'×10³/µL',     refCao:[6.0,17.0],    refGat:[5.5,19.5]},
+  serie_branca_3p: [
+    {id:'leuc',    nome:'Leucócitos Totais',    unidade:'/mm³',        refCao:[5500,16500],  refGat:[5500,19500]},
     {id:'linf_p',  nome:'Linfócitos',           unidade:'%',           refCao:[12,30],       refGat:[20,55]},
-    {id:'linf_a',  nome:'Linfócitos (abs.)',    unidade:'×10³/µL',     refCao:[1.0,4.8],     refGat:[1.5,7.0]},
+    {id:'linf_a',  nome:'Linfócitos (abs.)',    unidade:'/mm³',        refCao:[660,4950],    refGat:[1500,7000]},
     {id:'mid_p',   nome:'Monócitos/MID',        unidade:'%',           refCao:[3,10],        refGat:[0,14]},
-    {id:'mid_a',   nome:'Monócitos/MID (abs.)', unidade:'×10³/µL',     refCao:[0.1,1.4],     refGat:[0,1.4]},
+    {id:'mid_a',   nome:'Monócitos/MID (abs.)', unidade:'/mm³',        refCao:[0,1650],      refGat:[0,1400]},
     {id:'gran_p',  nome:'Granulócitos',         unidade:'%',           refCao:[60,80],       refGat:[35,78]},
-    {id:'gran_a',  nome:'Granulócitos (abs.)',  unidade:'×10³/µL',     refCao:[3.0,11.5],    refGat:[2.5,12.5]},
+    {id:'gran_a',  nome:'Granulócitos (abs.)',  unidade:'/mm³',        refCao:[3000,11500],  refGat:[2500,12500]},
   ],
+  serie_branca_5p: [
+    {id:'leuc',    nome:'Leucócitos Totais',    unidade:'/mm³',        refCao:[5500,16500],  refGat:[5500,19500]},
+    {id:'meta_p',  nome:'Metamielócito',        unidade:'%',           refCao:[0,0],         refGat:[0,0], opt:true},
+    {id:'meta_a',  nome:'Metamielócito (abs.)', unidade:'/mm³',        refCao:[0,165],       refGat:[0,165], opt:true},
+    {id:'bast_p',  nome:'Bastonete',            unidade:'%',           refCao:[0,3],         refGat:[0,3]},
+    {id:'bast_a',  nome:'Bastonete (abs.)',      unidade:'/mm³',        refCao:[0,495],       refGat:[0,495]},
+    {id:'seg_p',   nome:'Segmentado',           unidade:'%',           refCao:[58,78],       refGat:[35,75]},
+    {id:'seg_a',   nome:'Segmentado (abs.)',     unidade:'/mm³',        refCao:[3300,12705],  refGat:[2500,12500]},
+    {id:'eosin_p', nome:'Eosinófilo',           unidade:'%',           refCao:[2,10],        refGat:[2,12]},
+    {id:'eosin_a', nome:'Eosinófilo (abs.)',     unidade:'/mm³',        refCao:[0,1650],      refGat:[100,1500]},
+    {id:'linf_p',  nome:'Linfócito',            unidade:'%',           refCao:[12,30],       refGat:[20,55]},
+    {id:'linf_a',  nome:'Linfócito (abs.)',      unidade:'/mm³',        refCao:[660,4950],    refGat:[1500,7000]},
+    {id:'mono_p',  nome:'Monócito',             unidade:'%',           refCao:[1,10],        refGat:[0,4]},
+    {id:'mono_a',  nome:'Monócito (abs.)',       unidade:'/mm³',        refCao:[0,1650],      refGat:[0,850]},
+    {id:'baso_p',  nome:'Basófilo',             unidade:'%',           refCao:[0,1],         refGat:[0,1], opt:true},
+    {id:'baso_a',  nome:'Basófilo (abs.)',       unidade:'/mm³',        refCao:[0,495],       refGat:[0,495], opt:true},
+  ],
+  serie_branca: [], // preenchida dinamicamente conforme modo
   plaquetas: [
     {id:'plaq',    nome:'Plaquetas',            unidade:'×10³/µL',     refCao:[200,500],     refGat:[200,500]},
     {id:'mpv',     nome:'MPV — Volume Plaquetário Médio', unidade:'fL', refCao:[7.0,12.5],  refGat:[12.0,18.0]},
   ],
   bioquimica: [
-    {id:'alt',     nome:'ALT (TGP)',            unidade:'U/L',         refCao:[10,88],       refGat:[10,75]},
-    {id:'ggt',     nome:'GGT',                  unidade:'U/L',         refCao:[1.0,7.0],     refGat:[0,4.0]},
-    {id:'fa',      nome:'Fosfatase Alcalina (FA)',unidade:'U/L',       refCao:[20,150],      refGat:[10,80]},
-    {id:'ureia',   nome:'Ureia',                unidade:'mg/dL',       refCao:[15.0,60.0],   refGat:[20.0,65.0]},
-    {id:'creat',   nome:'Creatinina',           unidade:'mg/dL',       refCao:[0.50,1.50],   refGat:[0.80,1.80]},
+    {id:'alt',     nome:'ALT (TGP)',            unidade:'U/L',         refCao:[10,88],       refGat:[10,88]},
+    {id:'ggt',     nome:'GGT',                  unidade:'U/L',         refCao:[0,10],        refGat:[0,10]},
+    {id:'fa',      nome:'Fosfatase Alcalina (FA)',unidade:'U/L',       refCao:[10,92],       refGat:[7,80], faIdade:true},
+    {id:'ureia',   nome:'Ureia',                unidade:'mg/dL',       refCao:[10.0,60.0],   refGat:[10.0,60.0]},
+    {id:'creat',   nome:'Creatinina',           unidade:'mg/dL',       refCao:[0.50,1.60],   refGat:[0.50,1.70]},
   ]
 };
 
@@ -1147,8 +1174,9 @@ function gerarLaudo(){
     </div>`;
   }
 
+  const modoLabel = modoLeuco === '3p' ? 'LEUCOGRAMA — 3 PARTES (LYM / MID / GRA)' : 'LEUCOGRAMA — DIFERENCIAL COMPLETO (5 PARTES)';
   const hemoHTML = montaTabela('serie_vermelha','HEMOGRAMA — SÉRIE VERMELHA') +
-                   montaTabela('serie_branca','LEUCOGRAMA — SÉRIE BRANCA') +
+                   montaTabela('serie_branca', modoLabel) +
                    montaTabela('plaquetas','PLAQUETAS');
   const bioHTML  = montaTabela('bioquimica','BIOQUÍMICA SÉRICA');
   const citoHTML = montaCitologia();
@@ -1670,13 +1698,84 @@ function resetarFormulario() {
 }
 
 // Init MSAL on page load
-window.addEventListener('load', () => { initMsal(); });
+// Carrega MSAL dinamicamente e inicializa após o carregamento
+function loadMSAL() {
+  const script = document.createElement('script');
+  script.src = 'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js';
+  script.onload = function() {
+    console.log('MSAL carregado com sucesso');
+    initMsal();
+  };
+  script.onerror = function() {
+    // Tenta CDN alternativo
+    console.warn('CDN principal falhou, tentando alternativo...');
+    const script2 = document.createElement('script');
+    script2.src = 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js';
+    script2.onload = function() {
+      console.log('MSAL carregado via CDN alternativo');
+      initMsal();
+    };
+    script2.onerror = function() {
+      console.error('Não foi possível carregar MSAL. Verifique sua conexão com a internet.');
+      const loginArea = document.getElementById('od-login-area');
+      if (loginArea) {
+        loginArea.innerHTML = '<p style="font-family:Arial,sans-serif;font-size:11px;color:#c0392b;text-align:center;">⚠️ Não foi possível carregar o módulo de autenticação Microsoft.<br>Verifique sua conexão com a internet e recarregue a página.</p>';
+      }
+    };
+    document.head.appendChild(script2);
+  };
+  document.head.appendChild(script);
+}
 
+// Inicializa quando a página carrega
+window.addEventListener('load', function() {
+  loadMSAL();
+});
+
+
+// ===================== MODO LEUCOGRAMA =====================
+let modoLeuco = '3p';  // '3p' ou '5p'
+let faIdade   = 'adulto'; // 'adulto' ou 'filhote'
+
+function setModoLeuco(modo) {
+  modoLeuco = modo;
+  // Update buttons
+  document.getElementById('btn3p').className = 'sb' + (modo==='3p' ? ' cao sel' : '');
+  document.getElementById('btn5p').className = 'sb' + (modo==='5p' ? ' cao sel' : '');
+  // Rebuild the serie_branca EXAMES list
+  EXAMES.serie_branca = modo === '3p'
+    ? EXAMES.serie_branca_3p
+    : EXAMES.serie_branca_5p;
+  // Clear and rebuild rows
+  buildRows('serie_branca', EXAMES.serie_branca);
+}
+
+function setFaIdade(faixa) {
+  faIdade = faixa;
+  document.getElementById('btnFaAdulto').className  = 'sb' + (faixa==='adulto'  ? ' cao sel' : '');
+  document.getElementById('btnFaFilhote').className = 'sb' + (faixa==='filhote' ? ' cao sel' : '');
+  // Update FA reference
+  const fa = EXAMES.bioquimica.find(e => e.id === 'fa');
+  if (fa) {
+    fa.refCao = faixa === 'filhote' ? [10, 156] : [10, 92];
+    // refresh ref display and flags
+    const rc = document.getElementById('rc_fa');
+    if (rc) rc.textContent = fmtRef(getRef(fa));
+    updateFlag('fa');
+  }
+}
+
+// Also update montaTabela to use active serie_branca
 // ===================== INIT =====================
 window.onload=function(){
   const agora=new Date();
   agora.setMinutes(agora.getMinutes()-agora.getTimezoneOffset());
   document.getElementById('pData').value=agora.toISOString().slice(0,16);
+
+  // Init leucograma mode
+  EXAMES.serie_branca = EXAMES.serie_branca_3p;
+  setModoLeuco('3p');
+  setFaIdade('adulto');
 
   buildRows('serie_vermelha', EXAMES.serie_vermelha);
   buildRows('serie_branca',   EXAMES.serie_branca);
