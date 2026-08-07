@@ -999,8 +999,13 @@ function updateFlag(id){
 }
 
 function setTab(i){
-  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
-  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+  // Use explicit tab buttons inside .tabs div only
+  document.querySelectorAll('.tabs .tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  // Use explicit panel IDs
+  for(let j=0;j<6;j++){
+    const p=document.getElementById('tab'+j);
+    if(p) p.classList.toggle('active',i===j);
+  }
 }
 
 // ===================== GERAR LAUDO =====================
@@ -1194,13 +1199,7 @@ function gerarLaudo(){
   obterNumeroLaudo().then(num => {
     document.getElementById('display-num-laudo').textContent = num;
     const idEl = document.getElementById('pIdExame');
-    if (idEl && !idEl.value) idEl.value = num;
-  }).catch(() => {});
-  // Pré-carrega número do laudo do Supabase assim que o laudo é gerado
-  obterNumeroLaudo().then(num => {
-    document.getElementById('display-num-laudo').textContent = num;
-    const idEl = document.getElementById('pIdExame');
-    if (idEl && !idEl.value) idEl.value = num;
+    if (idEl) idEl.value = num;
   }).catch(() => {
     document.getElementById('display-num-laudo').textContent = 'Sem conexão';
   });
