@@ -1951,7 +1951,7 @@ function reimprimirLaudo(l) {
 
   var mv   = l.mv_nome || 'Dr. Dnilson Carlos Dias';
   var crmv = l.mv_crmv || 'CRMV 74.780 SP';
-  var logoSrc = document.querySelector('.laudo-logo img') ? document.querySelector('.laudo-logo img').src : '';
+  // logoSrc já definido como const no escopo global com o base64 completo da marca
 
   var html = '<div class="laudo-header">'
     + '<div class="laudo-logo"><img src="' + logoSrc + '" alt="Almoa Medicina Veterinária"></div>'
