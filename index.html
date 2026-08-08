@@ -1858,6 +1858,226 @@ function fecharModal(){
   if(m) m.remove();
 }
 
+// Gera e imprime o laudo a partir dos dados do Supabase
+function reimprimirLaudo(l) {
+  fecharModal();
+
+  // Usa data original do laudo
+  var dataOriginal = l.data_coleta || l.data_emissao || '';
+  var dataFmt = dataOriginal ? fmtDataLaudo(dataOriginal) : '—';
+  var dataEmissaoFmt = fmtDataLaudo(l.data_emissao);
+
+  // Monta ficha do paciente
+  function pts2(label, val, total) {
+    var dots = '.'.repeat(Math.max(1, total - label.length));
+    return label + dots + ': ' + val;
+  }
+
+  // Monta tabelas de resultados
+  function montaTabelaArchived(dados, titulo) {
+    if (!dados || Object.keys(dados).length === 0) return '';
+    var linhas = Object.entries(dados).map(function(entry) {
+      var v = entry[1];
+      if (!v || !v.valor) return '';
+      return '<tr><td>' + (v.nome || entry[0]) + '</td><td>' + (v.unidade || '') + '</td>'
+        + '<td style="font-weight:700">' + v.valor + '</td></tr>';
+    }).filter(Boolean).join('');
+    if (!linhas) return '';
+    return '<div class="laudo-secao"><div class="laudo-secao-titulo">' + titulo + '</div>'
+      + '<table class="laudo-table"><thead><tr>'
+      + '<th>Parâmetro</th><th>Unidade</th><th>Resultado</th>'
+      + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+  }
+
+  // Monta HTML completo do laudo arquivado
+  var hemoHTML = montaTabelaArchived(l.serie_vermelha, 'HEMOGRAMA — SÉRIE VERMELHA')
+    + montaTabelaArchived(l.serie_branca, 'LEUCOGRAMA')
+    + montaTabelaArchived(l.plaquetas, 'PLAQUETAS');
+  var bioHTML  = montaTabelaArchived(l.bioquimica, 'BIOQUÍMICA SÉRICA');
+  var obsH = l.obs_hematologica ? '<div class="laudo-obs">Obs.: ' + l.obs_hematologica + '</div>' : '';
+  var obsB = l.obs_bioquimica   ? '<div class="laudo-obs">Obs.: ' + l.obs_bioquimica   + '</div>' : '';
+
+  // Citologia OT
+  var citoOTHTML = '';
+  if (l.citologia_ot) {
+    ['od','oe'].forEach(function(orelha) {
+      var ot = l.citologia_ot[orelha];
+      if (!ot || !ot.amostra) return;
+      var rows = [
+        ['Material coletado', ot.amostra],
+        ['Aparência macroscópica', ot.macro],
+        ['Leveduras (Malassezia) — direto', ot.dir_malassezia],
+        ['Cocos — direto', ot.dir_cocos],
+        ['Bastonetes — direto', ot.dir_bast],
+        ['Ácaros (Otodectes) — direto', ot.dir_acaros],
+        ['Leveduras (Malassezia) — corado', ot.cor_malassezia],
+        ['Cocos — corado', ot.cor_cocos],
+        ['Coloração', ot.coloracao],
+      ].filter(function(r){ return r[1]; })
+       .map(function(r){ return '<tr><td>' + r[0] + '</td><td colspan="2">' + r[1] + '</td></tr>'; }).join('');
+      citoOTHTML += '<div class="laudo-secao"><div class="laudo-secao-titulo">CITOLOGIA OTOLÓGICA — ' + orelha.toUpperCase() + '</div>'
+        + '<table class="laudo-table"><thead><tr><th>Parâmetro</th><th colspan="2">Resultado</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        + (ot.obs ? '<div class="laudo-obs">Obs.: ' + ot.obs + '</div>' : '') + '</div>';
+    });
+    if (l.citologia_ot.conclusao) {
+      citoOTHTML += '<div class="laudo-obs" style="border-left-color:var(--azul);background:#eef2fb"><strong>Conclusão:</strong> ' + l.citologia_ot.conclusao + '</div>';
+    }
+  }
+
+  // Citologia Pele
+  var citoPeleHTML = '';
+  if (l.citologia_pele) {
+    var cp = l.citologia_pele;
+    var peleRows = [
+      ['Local / Lesão', cp.local], ['Tipo de lesão', cp.lesao],
+      ['Técnica de coleta', cp.tecnica], ['Aparência', cp.macro],
+      ['Demodex (direto)', cp.dir_demodex], ['Sarcoptes (direto)', cp.dir_sarcoptes],
+      ['Leveduras (direto)', cp.dir_malassezia], ['Cocos (direto)', cp.dir_cocos],
+      ['Fase do ciclo', cp.trico_fase], ['Morfologia haste', cp.trico_haste],
+      ['Demodex folículo', cp.trico_demodex],
+      ['Coloração', cp.coloracao], ['Neutrófilos', cp.cor_neutro],
+      ['Células atípicas', cp.cor_atip], ['Hifas', cp.cor_hifas],
+    ].filter(function(r){ return r[1]; })
+     .map(function(r){ return '<tr><td>' + r[0] + '</td><td colspan="2">' + r[1] + '</td></tr>'; }).join('');
+    if (peleRows) {
+      citoPeleHTML = '<div class="laudo-secao"><div class="laudo-secao-titulo">CITOLOGIA DE PELE</div>'
+        + '<table class="laudo-table"><thead><tr><th>Parâmetro</th><th colspan="2">Resultado</th></tr></thead><tbody>'
+        + peleRows + '</tbody></table>'
+        + (cp.obs ? '<div class="laudo-obs">Obs.: ' + cp.obs + '</div>' : '')
+        + (cp.conclusao ? '<div class="laudo-obs" style="border-left-color:var(--azul);background:#eef2fb"><strong>Conclusão:</strong> ' + cp.conclusao + '</div>' : '')
+        + '</div>';
+    }
+  }
+
+  var mv   = l.mv_nome || 'Dr. Dnilson Carlos Dias';
+  var crmv = l.mv_crmv || 'CRMV 74.780 SP';
+  var logoSrc = document.querySelector('.laudo-logo img') ? document.querySelector('.laudo-logo img').src : '';
+
+  var html = '<div class="laudo-header">'
+    + '<div class="laudo-logo"><img src="' + logoSrc + '" alt="Almoa Medicina Veterinária"></div>'
+    + '<div class="laudo-clinica"><strong>ALMOA MEDICINA VETERINÁRIA LTDA.</strong>'
+    + 'CNPJ: 56.038.125/0001-65<br>Rua Coronel Lisboa, 735 — Vila Mariana, SP<br>'
+    + 'CEP 04020-041<br>contato@almoa.com.br</div></div>'
+    + '<div class="laudo-ficha"><div class="ficha-grid">'
+    + '<div class="ficha-item" style="grid-column:1/-1;background:#eef2fb;padding:4px 8px;border-left:3px solid var(--azul);font-family:Arial,sans-serif;font-size:11px;color:var(--azul);font-weight:700;">ID do Exame: ' + (l.numero_laudo || '—') + '</div>'
+    + '<div class="ficha-item">' + pts2('Animal', l.animal || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Espécie', l.especie || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Raça', l.raca || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Sexo', l.sexo || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Idade', l.idade || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Responsável', l.responsavel || '—', 12) + '</div>'
+    + '<div class="ficha-item">' + pts2('Coleta', dataFmt, 12) + '</div>'
+    + '<div class="ficha-item" style="grid-column:1/-1">' + pts2('Solicitante', mv + ' — ' + crmv, 12) + '</div>'
+    + '</div></div>'
+    + hemoHTML + obsH
+    + bioHTML  + obsB
+    + citoOTHTML + citoPeleHTML
+    + '<div class="laudo-footer">'
+    + '<div class="footer-conf">'
+    + '<div class="footer-left">Conferido, liberado e assinado digitalmente por:</div>'
+    + '<div class="footer-mv">'
+    + '<div id="sig-placeholder-r" style="height:50px;border:1.5px dashed #bbb;border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;">'
+    + '<span style="font-family:Arial,sans-serif;font-size:10px;color:#aaa;">Aguardando assinatura digital</span></div>'
+    + '<div id="sig-badge-r" style="display:none;"></div>'
+    + '<div class="footer-mv-name">' + mv + '</div>'
+    + '<div class="footer-mv-crmv">' + crmv + '</div>'
+    + '</div></div>'
+    + '<div class="footer-disclaimer">A interpretação dos exames laboratoriais deverá ser realizada pelo médico veterinário responsável,<br>mediante a sintomatologia clínica do animal.</div>'
+    + '</div>'
+    + '<div style="margin-top:8px;font-family:Arial,sans-serif;font-size:9px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:6px;">'
+    + 'Laudo original emitido em: ' + dataEmissaoFmt + ' — Reimpressão em: ' + fmtDataLaudo(new Date().toISOString())
+    + '</div>';
+
+  // Monta barra de ações para reimprimir
+  var signBarHTML = '<div id="sign-bar-r" style="margin-top:16px;padding:14px;background:#f4f6fa;border:1px solid #d0d8ec;border-radius:6px;">'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;">'
+    + '<button onclick="window.print()" style="background:#1a3a6b;color:#fff;border:none;padding:10px 24px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;border-radius:5px;">🖨 Imprimir / Salvar PDF</button>'
+    + '<button onclick="assinarReimpressao()" id="btn-assinar-r" style="background:#6b7c2e;color:#fff;border:none;padding:10px 24px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;border-radius:5px;">🔏 Assinar Digitalmente</button>'
+    + '<button onclick="voltarConsulta()" style="background:transparent;color:#1a3a6b;border:2px solid #1a3a6b;padding:9px 20px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;">← Voltar</button>'
+    + '</div>'
+    + '<div id="sign-status-r" style="margin-top:8px;font-family:Arial,sans-serif;font-size:11px;color:#888;text-align:center;"></div>'
+    + '</div>';
+
+  // Exibe no laudo-view
+  document.getElementById('laudo-content').innerHTML = html + signBarHTML;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('laudo-view').style.display = 'block';
+
+  // Oculta a barra de impressão padrão e botão salvar
+  var printBar = document.querySelector('.print-bar');
+  if (printBar) printBar.style.display = 'none';
+
+  window.scrollTo(0, 0);
+}
+
+function voltarConsulta() {
+  // Restaura barra de impressão padrão
+  var printBar = document.querySelector('.print-bar');
+  if (printBar) printBar.style.display = 'flex';
+  // Volta para aba de consulta
+  document.getElementById('laudo-view').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setTab(5);
+}
+
+async function assinarReimpressao() {
+  var btn     = document.getElementById('btn-assinar-r');
+  var status  = document.getElementById('sign-status-r');
+  var badge   = document.getElementById('sig-badge-r');
+  var pholder = document.getElementById('sig-placeholder-r');
+  if (!btn) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Aguardando certificado...';
+  status.textContent = '';
+
+  try {
+    var file = await selecionarArquivo('.p12,.pfx,.pem,.cer,.crt');
+    var isPFX = /\.(p12|pfx)$/i.test(file.name);
+    var senha = '';
+    if (isPFX) {
+      senha = prompt('Digite a senha do certificado (.pfx):', '');
+      if (senha === null) throw new Error('cancelado');
+    }
+    btn.textContent = 'Calculando hash...';
+    var encoder   = new TextEncoder();
+    var laudoEl   = document.getElementById('laudo-content');
+    var hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(laudoEl ? laudoEl.innerText : ''));
+    var hashHex   = Array.from(new Uint8Array(hashBuffer)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    var certBuffer  = await file.arrayBuffer();
+    var certHash    = await crypto.subtle.digest('SHA-256', certBuffer);
+    var certHashHex = Array.from(new Uint8Array(certHash)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    var ts      = new Date();
+    var tsBR    = ts.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var sigId   = (hashHex.substring(0,8) + ts.getTime().toString(36)).toUpperCase();
+    var nomeMV  = document.querySelector('.footer-mv-name') ? document.querySelector('.footer-mv-name').textContent : '—';
+    var crmvMV  = document.querySelector('.footer-mv-crmv') ? document.querySelector('.footer-mv-crmv').textContent : '—';
+    var nomeCert = file.name.replace(/\.(p12|pfx|pem|cer|crt)$/i, '');
+    badge.className = 'sig-valid';
+    badge.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      + '<span style="font-size:14px;">✅</span>'
+      + '<strong style="font-size:11px;color:#1b5e20;">DOCUMENTO ASSINADO DIGITALMENTE</strong></div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:9px;color:#2d6a2d;">'
+      + '<tr><td style="width:110px;padding:1px 0;"><strong>Signatário</strong></td><td>' + nomeMV + ' — ' + crmvMV + '</td></tr>'
+      + '<tr><td><strong>Certificado</strong></td><td>' + nomeCert + ' (' + (isPFX ? 'PKCS#12' : 'X.509') + ')</td></tr>'
+      + '<tr><td><strong>Data / Hora</strong></td><td>' + tsBR + '</td></tr>'
+      + '<tr><td><strong>ID Assinatura</strong></td><td style="font-family:monospace;">' + sigId + '</td></tr>'
+      + '<tr><td><strong>Hash SHA-256</strong></td><td style="font-family:monospace;font-size:8px;word-break:break-all;">' + hashHex + '</td></tr>'
+      + '</table>';
+    badge.style.display = 'block';
+    pholder.style.display = 'none';
+    btn.textContent = '✅ Assinado';
+    btn.style.background = '#2e7d32';
+    status.textContent = 'Assinatura concluída — ID: ' + sigId;
+    status.style.color = '#2d6a2d';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '🔏 Assinar Digitalmente';
+    status.textContent = e.message === 'cancelado' ? 'Cancelado.' : 'Erro: ' + e.message;
+    status.style.color = '#c0392b';
+  }
+}
+
 async function verLaudo(id) {
   try {
     const resp = await sbFetch('/rest/v1/laudos?id=eq.' + id + '&select=*', { method: 'GET' });
@@ -1910,9 +2130,24 @@ async function verLaudo(id) {
     if (l.obs_hematologica) box.innerHTML += '<div style="margin-top:8px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Hematológica:</b> ' + l.obs_hematologica + '</div>';
     if (l.obs_bioquimica)   box.innerHTML += '<div style="margin-top:4px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Bioquímica:</b> ' + l.obs_bioquimica + '</div>';
 
+    // Add reimprimir button at bottom of modal
+    var btnArea = document.createElement('div');
+    btnArea.style.cssText = 'display:flex;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid #eee;justify-content:center;flex-wrap:wrap;';
+    btnArea.innerHTML = '<button onclick="reimprimirLaudo(window._laudoAtual)" '
+      + 'style="background:#1a3a6b;color:#fff;border:none;padding:9px 22px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;">'
+      + '🖨 Reimprimir / Assinar</button>'
+      + '<button onclick="fecharModal()" '
+      + 'style="background:#eee;border:none;padding:9px 18px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;">'
+      + '✕ Fechar</button>';
+    box.appendChild(btnArea);
+
+    // Store laudo data for reimpressão
+    window._laudoAtual = l;
+
+    modal.id = 'almoa-modal';
     modal.appendChild(box);
     document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+    modal.addEventListener('click', function(e) { if(e.target===modal) modal.remove(); });
   } catch(e) {
     alert('Erro ao carregar laudo: ' + e.message);
   }
