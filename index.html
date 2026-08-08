@@ -1862,9 +1862,9 @@ function fecharModal(){
 // Gera e imprime o laudo a partir dos dados do Supabase
 function reimprimirLaudo(l) {
   if (!l) { alert('Sem dados.'); return; }
-
-  // Esconde modal e app, mostra reimpr-view
+  console.log('RL-1: inicio');
   fecharModal();
+  console.log('RL-2: modal fechado');
 
   // Cria ou reutiliza div de reimpressão
   var rv = document.getElementById('reimpr-view');
@@ -1875,6 +1875,7 @@ function reimprimirLaudo(l) {
   }
   rv.style.cssText = 'display:block;position:fixed;top:0;left:0;width:100%;height:100%;'
     + 'background:#eef2f8;overflow-y:auto;z-index:8888;padding:12px;box-sizing:border-box;';
+  console.log('RL-3: rv criado, display=' + rv.style.display);
 
   // Barra de acoes (topo)
   var barra = document.createElement('div');
@@ -1919,6 +1920,7 @@ function reimprimirLaudo(l) {
   cab.appendChild(logoDiv);
   cab.appendChild(clinicaDiv);
   wrap.appendChild(cab);
+  console.log('RL-4: cab adicionado ao wrap');
 
   // Ficha
   var ficha = document.createElement('div');
@@ -1946,6 +1948,7 @@ function reimprimirLaudo(l) {
     + '</div>'
     + '</div>';
   wrap.appendChild(ficha);
+  console.log('RL-5: ficha adicionada');
 
   // Tabelas de resultados
   function addTabela(dados, titulo) {
@@ -1987,6 +1990,7 @@ function reimprimirLaudo(l) {
   addTabela(l.serie_vermelha, 'HEMOGRAMA - SERIE VERMELHA');
   addTabela(l.serie_branca,   'LEUCOGRAMA - SERIE BRANCA');
   addTabela(l.plaquetas,      'PLAQUETAS');
+  console.log('RL-6: tabelas adicionadas');
   addTabela(l.bioquimica,     'BIOQUIMICA SERICA');
 
   // Observacoes
@@ -2023,6 +2027,7 @@ function reimprimirLaudo(l) {
     + 'text-align:center;">Emitido em: ' + fmtDataLaudo(l.data_emissao)
     + ' | Reimpresso em: ' + fmtDataLaudo(new Date().toISOString()) + '</div>';
   wrap.appendChild(footer);
+  console.log('RL-7: footer adicionado');
 
   // Monta tudo
   while (rv.firstChild) rv.removeChild(rv.firstChild);
@@ -2031,6 +2036,7 @@ function reimprimirLaudo(l) {
   container.style.cssText = 'max-width:860px;margin:0 auto;';
   container.appendChild(wrap);
   rv.appendChild(container);
+  console.log('RL-8: container adicionado ao rv, rv.children=' + rv.children.length);
 
   // Esconde app e laudo-view
   document.getElementById('app').style.display = 'none';
