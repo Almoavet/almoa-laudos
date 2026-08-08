@@ -1861,10 +1861,12 @@ function fecharModal(){
 
 // Gera e imprime o laudo a partir dos dados do Supabase
 function reimprimirLaudo(l) {
-  console.log('reimprimirLaudo chamado, l=', l ? 'OK' : 'NULL');
+  alert('reimprimirLaudo iniciado! l=' + (l ? 'OK id=' + l.id : 'NULL'));
+  console.log('reimprimirLaudo chamado, l=', l ? 'OK (id=' + l.id + ')' : 'NULL');
   if (!l) { alert('Dados do laudo não disponíveis.'); return; }
+  // Fecha modal se ainda aberto
   fecharModal();
-  console.log('Modal fechado, montando HTML...');
+  console.log('Montando HTML do laudo...');
 
   // Usa data original do laudo
   var dataOriginal = l.data_coleta || l.data_emissao || '';
@@ -2013,36 +2015,22 @@ function reimprimirLaudo(l) {
     + '<div id="sign-status-r" style="margin-top:8px;font-family:Arial,sans-serif;font-size:11px;color:#888;text-align:center;"></div>'
     + '</div>';
 
-  // Exibe no laudo-view
-  try {
-    document.getElementById('laudo-content').innerHTML = html + signBarHTML;
-  } catch(htmlErr) {
-    console.error('Erro ao montar HTML:', htmlErr);
-    // Show error inside laudo-view but don't return - let the view open
-    document.getElementById('laudo-content').innerHTML = 
-      '<div style="padding:20px;font-family:Arial,sans-serif;color:#c0392b;">'
-      + '<strong>Erro ao carregar laudo:</strong> ' + htmlErr.message
-      + '<br><br>Tente novamente ou verifique o console do navegador.</div>'
-      + signBarHTML;
-  }
-  console.log('Applying display changes...');
-  // Usa div dedicada para reimpressão (evita conflito com print-bar padrão)
+  // ── Show reimprimir view ──────────────────────────────────────────────────
   var reimprDiv = document.getElementById('reimpr-view');
   if (!reimprDiv) {
     reimprDiv = document.createElement('div');
     reimprDiv.id = 'reimpr-view';
-    reimprDiv.style.cssText = 'max-width:860px;margin:0 auto;padding:12px;';
+    reimprDiv.style.cssText = 'max-width:860px;margin:0 auto;padding:12px;background:#eef2f8;';
     document.body.appendChild(reimprDiv);
   }
   reimprDiv.innerHTML = '<div class="laudo-wrap">' + html + '</div>' + signBarHTML;
   reimprDiv.style.display = 'block';
 
-  // Esconde app e laudo-view padrão
   document.getElementById('app').style.display = 'none';
-  var laudoView = document.getElementById('laudo-view');
-  if (laudoView) laudoView.style.display = 'none';
+  var lv = document.getElementById('laudo-view');
+  if (lv) lv.style.display = 'none';
 
-  console.log('reimprimirLaudo concluido!');
+  console.log('reimprimirLaudo: done, reimpr-view shown');
   window.scrollTo(0, 0);
 }
 
@@ -2165,19 +2153,29 @@ async function verLaudo(id) {
     if (l.obs_hematologica) box.innerHTML += '<div style="margin-top:8px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Hematológica:</b> ' + l.obs_hematologica + '</div>';
     if (l.obs_bioquimica)   box.innerHTML += '<div style="margin-top:4px;padding:6px 10px;background:#fafaf5;border-left:3px solid #6b7c2e;font-size:11px;color:#555;"><b>Obs. Bioquímica:</b> ' + l.obs_bioquimica + '</div>';
 
-    // Add reimprimir button at bottom of modal
+    // Add reimprimir and fechar buttons using addEventListener (no inline onclick)
     var btnArea = document.createElement('div');
     btnArea.style.cssText = 'display:flex;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid #eee;justify-content:center;flex-wrap:wrap;';
-    btnArea.innerHTML = '<button onclick="reimprimirLaudo(window._laudoAtual)" '
-      + 'style="background:#1a3a6b;color:#fff;border:none;padding:9px 22px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;">'
-      + '🖨 Reimprimir / Assinar</button>'
-      + '<button onclick="fecharModal()" '
-      + 'style="background:#eee;border:none;padding:9px 18px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;">'
-      + '✕ Fechar</button>';
-    box.appendChild(btnArea);
 
-    // Store laudo data for reimpressão
-    window._laudoAtual = l;
+    var btnReimp = document.createElement('button');
+    btnReimp.textContent = '🖨 Reimprimir / Assinar';
+    btnReimp.style.cssText = 'background:#1a3a6b;color:#fff;border:none;padding:9px 22px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;';
+    btnReimp.addEventListener('click', function(e) {
+      e.stopPropagation();
+      reimprimirLaudo(l);
+    });
+
+    var btnFechar = document.createElement('button');
+    btnFechar.textContent = '✕ Fechar';
+    btnFechar.style.cssText = 'background:#eee;border:none;padding:9px 18px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;';
+    btnFechar.addEventListener('click', function(e) {
+      e.stopPropagation();
+      fecharModal();
+    });
+
+    btnArea.appendChild(btnReimp);
+    btnArea.appendChild(btnFechar);
+    box.appendChild(btnArea);
 
     modal.id = 'almoa-modal';
     modal.appendChild(box);
