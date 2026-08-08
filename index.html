@@ -1873,7 +1873,8 @@ function reimprimirLaudo(l) {
     rv.id = 'reimpr-view';
     document.body.appendChild(rv);
   }
-  rv.style.cssText = 'display:block;background:#eef2f8;min-height:100vh;padding:12px;';
+  rv.style.cssText = 'display:block;position:fixed;top:0;left:0;width:100%;height:100%;'
+    + 'background:#eef2f8;overflow-y:auto;z-index:8888;padding:12px;box-sizing:border-box;';
 
   // Barra de acoes (topo)
   var barra = document.createElement('div');
@@ -2027,11 +2028,11 @@ function reimprimirLaudo(l) {
 
 
 function voltarConsulta() {
-  // Esconde div de reimpressão
   var reimprDiv = document.getElementById('reimpr-view');
-  if (reimprDiv) reimprDiv.style.display = 'none';
-  // Mostra app na aba de consulta
+  if (reimprDiv) { reimprDiv.style.display = 'none'; reimprDiv.style.position = ''; }
   document.getElementById('app').style.display = 'block';
+  var lv = document.getElementById('laudo-view');
+  if (lv) lv.style.display = 'none';
   setTab(5);
 }
 
