@@ -140,9 +140,37 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
 .pg-btn:disabled{color:#aaa;cursor:default;}
 .pg-info{font-family:Arial,sans-serif;font-size:11px;color:#888;}
 
+
+/* ===== EDICAO ===== */
+#edit-view{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:#eef2f8;overflow-y:auto;z-index:8888;box-sizing:border-box;}
+.edit-wrap{max-width:860px;margin:0 auto;padding:12px;}
+.edit-barra{background:#6b7c2e;padding:10px 16px;border-radius:6px;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.edit-section{background:#fff;border:1px solid var(--border);border-radius:6px;
+  padding:18px 20px;margin-bottom:14px;}
+.edit-section-title{font-family:Arial,sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;color:#fff;background:var(--azul);
+  padding:5px 12px;margin:-18px -20px 14px;border-radius:6px 6px 0 0;}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+.edit-grid.g1{grid-template-columns:1fr;}
+.edit-fgg{display:flex;flex-direction:column;gap:4px;}
+.edit-fgg label{font-family:Arial,sans-serif;font-size:10px;font-weight:700;
+  color:var(--azul);text-transform:uppercase;letter-spacing:.7px;}
+.edit-fgg input,.edit-fgg select{padding:6px 9px;border:1px solid #c0cbe5;
+  border-radius:4px;font-size:12.5px;color:#222;background:#fafbfe;font-family:'Courier New',monospace;}
+.edit-exam-row{display:grid;grid-template-columns:220px 140px;gap:8px;align-items:center;
+  padding:5px 0;border-bottom:1px dashed #e8edf5;}
+.edit-exam-row:last-child{border-bottom:none;}
+.edit-exam-name{font-family:Arial,sans-serif;font-size:12px;color:#333;}
+.edit-exam-unit{font-family:Arial,sans-serif;font-size:10px;color:#888;}
+.edit-exam-row input{padding:5px 8px;border:1px solid #c0cbe5;border-radius:4px;
+  font-size:13px;font-family:'Courier New',monospace;text-align:center;background:#fafbfe;}
+
 /* Print */
 @media print{
   #app{display:none!important;}
+  #edit-view{display:none!important;}
   .print-bar{display:none!important;}
   #sign-bar-r{display:none!important;}
   #laudo-view{display:block!important;}
@@ -845,6 +873,28 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
     <button onclick="document.getElementById('laudo-view').style.display='none';document.getElementById('app').style.display='block';" style="background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5);padding:7px 18px;font-weight:700;font-size:12px;cursor:pointer;border-radius:4px;">← Editar</button>
   </div>
   <div class="laudo-wrap" id="laudo-content"></div>
+</div>
+
+<!-- TELA DE EDICAO -->
+<div id="edit-view">
+  <div class="edit-wrap">
+    <div class="edit-barra">
+      <button onclick="salvarEdicao()" id="btn-salvar-edicao"
+        style="background:#fff;color:#6b7c2e;border:none;padding:8px 18px;
+        font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;">
+        💾 Salvar Alterações
+      </button>
+      <button onclick="voltarDeEdicao()"
+        style="background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6);
+        padding:7px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;
+        cursor:pointer;border-radius:4px;">
+        ← Cancelar
+      </button>
+      <span id="edit-status" style="font-family:Arial,sans-serif;font-size:11px;
+        color:rgba(255,255,255,.85);margin-left:8px;"></span>
+    </div>
+    <div id="edit-content"></div>
+  </div>
 </div>
 
 <script>
@@ -2240,6 +2290,12 @@ async function verLaudo(id) {
       reimprimirLaudo(l);
     };
 
+    const btnEdit = document.createElement('button');
+    btnEdit.textContent = '✏️ Editar';
+    btnEdit.style.cssText = 'background:#6b7c2e;color:#fff;border:none;padding:9px 22px;'
+      + 'font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px;';
+    btnEdit.onclick = function() { modal.remove(); abrirEdicao(l); };
+
     const btnClose = document.createElement('button');
     btnClose.textContent = 'Fechar';
     btnClose.style.cssText = 'background:#eee;border:none;padding:9px 18px;'
@@ -2247,6 +2303,7 @@ async function verLaudo(id) {
     btnClose.onclick = function() { modal.remove(); };
 
     actRow.appendChild(btnReimp);
+    actRow.appendChild(btnEdit);
     actRow.appendChild(btnClose);
     box.appendChild(actRow);
 
@@ -2261,6 +2318,291 @@ async function verLaudo(id) {
   }
 }
 
+
+
+// ===================== EDICAO DE LAUDOS =====================
+var _laudoEditando = null;
+
+function voltarDeEdicao() {
+  document.getElementById('edit-view').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setTab(5);
+}
+
+function fld(id, label, value, full) {
+  return '<div class="edit-fgg' + (full ? ' full' : '') + '">'
+    + '<label>' + label + '</label>'
+    + '<input type="text" id="ed_' + id + '" value="' + (value || '').replace(/"/g, '&quot;') + '">'
+    + '</div>';
+}
+
+function fldSel(id, label, value, options) {
+  var opts = options.map(function(o) {
+    return '<option' + (o === value ? ' selected' : '') + '>' + o + '</option>';
+  }).join('');
+  return '<div class="edit-fgg"><label>' + label + '</label>'
+    + '<select id="ed_' + id + '">' + opts + '</select></div>';
+}
+
+function examRow(id, nome, unidade, valor) {
+  return '<div class="edit-exam-row">'
+    + '<div><div class="edit-exam-name">' + nome + '</div>'
+    + '<div class="edit-exam-unit">' + unidade + '</div></div>'
+    + '<input type="text" id="ed_exam_' + id + '" value="' + (valor || '') + '">'
+    + '</div>';
+}
+
+function abrirEdicao(l) {
+  _laudoEditando = l;
+  var ev = document.getElementById('edit-view');
+  var ec = document.getElementById('edit-content');
+  if (!ev || !ec) return;
+
+  // Helper: get saved value from JSONB
+  function getExam(grupo, id) {
+    var g = l[grupo];
+    if (!g || !g[id]) return '';
+    return typeof g[id] === 'object' ? (g[id].valor || '') : g[id];
+  }
+
+  // Serie vermelha fields
+  var svFields = [
+    {id:'eritro', nome:'Eritrócitos', unit:'milhões/mm³'},
+    {id:'hemo',   nome:'Hemoglobina', unit:'g/dL'},
+    {id:'htc',    nome:'Hematócrito', unit:'%'},
+    {id:'vcm',    nome:'VCM', unit:'fL'},
+    {id:'hcm',    nome:'HCM', unit:'pg'},
+    {id:'chcm',   nome:'CHCM', unit:'%'},
+    {id:'rdw',    nome:'RDW', unit:'%'},
+    {id:'ptp',    nome:'Proteína Total Plasmática', unit:'g/dL'},
+    {id:'eritrob',nome:'Eritroblastos', unit:'/100 leuc.'},
+  ];
+  var svHTML = svFields.map(function(f) {
+    return examRow(f.id, f.nome, f.unit, getExam('serie_vermelha', f.id));
+  }).join('');
+
+  // Serie branca - detect 3p or 5p
+  var sbKeys = Object.keys(l.serie_branca || {});
+  var is5p = sbKeys.some(function(k){ return k === 'seg_p' || k === 'bast_p' || k === 'meta_p'; });
+  var sbFields = is5p ? [
+    {id:'leuc',   nome:'Leucócitos Totais', unit:'/mm³'},
+    {id:'meta_p', nome:'Metamielócito %', unit:'%'},
+    {id:'meta_a', nome:'Metamielócito abs.', unit:'/mm³'},
+    {id:'bast_p', nome:'Bastonete %', unit:'%'},
+    {id:'bast_a', nome:'Bastonete abs.', unit:'/mm³'},
+    {id:'seg_p',  nome:'Segmentado %', unit:'%'},
+    {id:'seg_a',  nome:'Segmentado abs.', unit:'/mm³'},
+    {id:'eosin_p',nome:'Eosinófilo %', unit:'%'},
+    {id:'eosin_a',nome:'Eosinófilo abs.', unit:'/mm³'},
+    {id:'linf_p', nome:'Linfócito %', unit:'%'},
+    {id:'linf_a', nome:'Linfócito abs.', unit:'/mm³'},
+    {id:'mono_p', nome:'Monócito %', unit:'%'},
+    {id:'mono_a', nome:'Monócito abs.', unit:'/mm³'},
+    {id:'baso_p', nome:'Basófilo %', unit:'%'},
+    {id:'baso_a', nome:'Basófilo abs.', unit:'/mm³'},
+  ] : [
+    {id:'leuc',   nome:'Leucócitos Totais', unit:'/mm³'},
+    {id:'linf_p', nome:'Linfócitos %', unit:'%'},
+    {id:'linf_a', nome:'Linfócitos abs.', unit:'/mm³'},
+    {id:'mid_p',  nome:'Monócitos/MID %', unit:'%'},
+    {id:'mid_a',  nome:'Monócitos/MID abs.', unit:'/mm³'},
+    {id:'gran_p', nome:'Granulócitos %', unit:'%'},
+    {id:'gran_a', nome:'Granulócitos abs.', unit:'/mm³'},
+  ];
+  var sbHTML = sbFields.map(function(f) {
+    return examRow(f.id, f.nome, f.unit, getExam('serie_branca', f.id));
+  }).join('');
+
+  var plaqHTML = [
+    {id:'plaq', nome:'Plaquetas', unit:'/mm³'},
+    {id:'mpv',  nome:'MPV', unit:'fL'},
+  ].map(function(f) {
+    return examRow(f.id, f.nome, f.unit, getExam('plaquetas', f.id));
+  }).join('');
+
+  var bioFields = [
+    {id:'alt',  nome:'ALT (TGP)', unit:'U/L'},
+    {id:'ggt',  nome:'GGT', unit:'U/L'},
+    {id:'fa',   nome:'Fosfatase Alcalina (FA)', unit:'U/L'},
+    {id:'ureia',nome:'Ureia', unit:'mg/dL'},
+    {id:'creat',nome:'Creatinina', unit:'mg/dL'},
+  ];
+  var bioHTML = bioFields.map(function(f) {
+    return examRow(f.id, f.nome, f.unit, getExam('bioquimica', f.id));
+  }).join('');
+
+  var dataColeta = l.data_coleta ? l.data_coleta.slice(0,16) : '';
+
+  ec.innerHTML =
+    // Paciente
+    '<div class="edit-section">'
+    + '<div class="edit-section-title">Identificação do Paciente</div>'
+    + '<div class="edit-grid">'
+    + fld('animal',      'Nome do Animal',   l.animal)
+    + fld('responsavel', 'Responsável',       l.responsavel)
+    + fld('raca',        'Raça',              l.raca)
+    + fldSel('especie',  'Espécie',           l.especie, ['CANINA','FELINA'])
+    + fldSel('sexo',     'Sexo',              l.sexo,    ['Macho','Femea','Fêmea'])
+    + fld('idade',       'Idade',             l.idade)
+    + fld('microchip',   'Microchip',         l.microchip)
+    + '<div class="edit-fgg"><label>Data da Coleta</label>'
+    + '<input type="datetime-local" id="ed_data_coleta" value="' + dataColeta + '"></div>'
+    + fld('mv_nome',     'Médico Veterinário', l.mv_nome, true)
+    + fld('mv_crmv',     'CRMV',              l.mv_crmv)
+    + '</div></div>'
+
+    // Série vermelha
+    + '<div class="edit-section">'
+    + '<div class="edit-section-title">Série Vermelha</div>'
+    + svHTML + '</div>'
+
+    // Série branca
+    + '<div class="edit-section">'
+    + '<div class="edit-section-title">Leucograma — ' + (is5p ? '5 partes' : '3 partes') + '</div>'
+    + sbHTML + '</div>'
+
+    // Plaquetas
+    + '<div class="edit-section">'
+    + '<div class="edit-section-title">Plaquetas</div>'
+    + plaqHTML + '</div>'
+
+    // Bioquímica
+    + '<div class="edit-section">'
+    + '<div class="edit-section-title">Bioquímica Sérica</div>'
+    + bioHTML + '</div>'
+
+    // Observações
+    + '<div class="edit-section">'
+    + '<div class="edit-section-title">Observações</div>'
+    + '<div class="edit-grid g1">'
+    + '<div class="edit-fgg"><label>Observação Hematológica</label>'
+    + '<input type="text" id="ed_obs_h" value="' + (l.obs_hematologica||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="edit-fgg"><label>Observação Bioquímica</label>'
+    + '<input type="text" id="ed_obs_b" value="' + (l.obs_bioquimica||'').replace(/"/g,'&quot;') + '"></div>'
+    + '</div></div>'
+
+    // Citologia otológica (obs only for now)
+    + (l.citologia_ot ? '<div class="edit-section"><div class="edit-section-title">Citologia Otológica — Conclusão</div>'
+    + '<div class="edit-fgg"><label>Conclusão</label>'
+    + '<input type="text" id="ed_cito_ot_conc" value="' + ((l.citologia_ot.conclusao||'').replace(/"/g,'&quot;')) + '"></div>'
+    + '</div>' : '')
+
+    // Citologia pele (obs only)
+    + (l.citologia_pele ? '<div class="edit-section"><div class="edit-section-title">Citologia de Pele — Observação / Conclusão</div>'
+    + '<div class="edit-grid g1">'
+    + '<div class="edit-fgg"><label>Observação</label>'
+    + '<input type="text" id="ed_cito_pele_obs" value="' + ((l.citologia_pele.obs||'').replace(/"/g,'&quot;')) + '"></div>'
+    + '<div class="edit-fgg"><label>Conclusão</label>'
+    + '<input type="text" id="ed_cito_pele_conc" value="' + ((l.citologia_pele.conclusao||'').replace(/"/g,'&quot;')) + '"></div>'
+    + '</div></div>' : '');
+
+  ev.style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+  var lv = document.getElementById('laudo-view');
+  if (lv) lv.style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function salvarEdicao() {
+  if (!_laudoEditando) return;
+  var btn    = document.getElementById('btn-salvar-edicao');
+  var status = document.getElementById('edit-status');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  status.textContent = '';
+
+  var gv = function(id) {
+    var el = document.getElementById('ed_' + id);
+    return el ? el.value.trim() : null;
+  };
+
+  // Rebuild exam JSONB preserving nome/unidade from original
+  function rebuildGrupo(original, ids) {
+    if (!original) return null;
+    var result = {};
+    ids.forEach(function(id) {
+      var val = (document.getElementById('ed_exam_' + id) || {}).value || '';
+      if (val.trim() === '') return;
+      var orig = original[id];
+      result[id] = {
+        valor:    val.trim(),
+        nome:     (orig && orig.nome)    || id,
+        unidade:  (orig && orig.unidade) || '',
+      };
+    });
+    return Object.keys(result).length ? result : null;
+  }
+
+  var svIds   = ['eritro','hemo','htc','vcm','hcm','chcm','rdw','ptp','eritrob'];
+  var sbKeys  = Object.keys(_laudoEditando.serie_branca || {});
+  var is5p    = sbKeys.some(function(k){ return k==='seg_p'||k==='bast_p'; });
+  var sbIds   = is5p
+    ? ['leuc','meta_p','meta_a','bast_p','bast_a','seg_p','seg_a','eosin_p','eosin_a','linf_p','linf_a','mono_p','mono_a','baso_p','baso_a']
+    : ['leuc','linf_p','linf_a','mid_p','mid_a','gran_p','gran_a'];
+  var plaqIds = ['plaq','mpv'];
+  var bioIds  = ['alt','ggt','fa','ureia','creat'];
+
+  var dataColetaEl = document.getElementById('ed_data_coleta');
+  var dataColeta = dataColetaEl && dataColetaEl.value
+    ? new Date(dataColetaEl.value).toISOString() : _laudoEditando.data_coleta;
+
+  // Update citologia if present
+  var citoOT = _laudoEditando.citologia_ot
+    ? Object.assign({}, _laudoEditando.citologia_ot,
+        { conclusao: (document.getElementById('ed_cito_ot_conc')||{}).value || '' })
+    : null;
+  var citoPele = _laudoEditando.citologia_pele
+    ? Object.assign({}, _laudoEditando.citologia_pele, {
+        obs:       (document.getElementById('ed_cito_pele_obs') ||{}).value || '',
+        conclusao: (document.getElementById('ed_cito_pele_conc')||{}).value || '',
+      })
+    : null;
+
+  var payload = {
+    animal:           (gv('animal')||'').toUpperCase() || null,
+    responsavel:      gv('responsavel') || null,
+    raca:             (gv('raca')||'').toUpperCase() || null,
+    especie:          gv('especie') || null,
+    sexo:             gv('sexo') || null,
+    idade:            gv('idade') || null,
+    microchip:        gv('microchip') || null,
+    data_coleta:      dataColeta,
+    mv_nome:          gv('mv_nome') || null,
+    mv_crmv:          gv('mv_crmv') || null,
+    serie_vermelha:   rebuildGrupo(_laudoEditando.serie_vermelha, svIds),
+    serie_branca:     rebuildGrupo(_laudoEditando.serie_branca,   sbIds),
+    plaquetas:        rebuildGrupo(_laudoEditando.plaquetas,       plaqIds),
+    bioquimica:       rebuildGrupo(_laudoEditando.bioquimica,      bioIds),
+    obs_hematologica: gv('obs_h') || null,
+    obs_bioquimica:   gv('obs_b') || null,
+    citologia_ot:     citoOT,
+    citologia_pele:   citoPele,
+    assinado:         false, // reset assinatura após edição
+  };
+
+  sbFetch('/rest/v1/laudos?id=eq.' + _laudoEditando.id, {
+    method: 'PATCH',
+    headers: { 'Prefer': 'return=representation' },
+    body: JSON.stringify(payload),
+  }).then(function(resp) {
+    if (!resp.ok) return resp.text().then(function(t){ throw new Error(t); });
+    return resp.json();
+  }).then(function(data) {
+    status.textContent = 'Salvo com sucesso!';
+    status.style.color = '#c8e6c9';
+    btn.textContent = '✓ Salvo';
+    btn.style.background = '#2e7d32';
+    btn.style.color = '#fff';
+    // Update local copy
+    _laudoEditando = Array.isArray(data) ? data[0] : data;
+    setTimeout(voltarDeEdicao, 1200);
+  }).catch(function(e) {
+    status.textContent = 'Erro: ' + e.message;
+    status.style.color = '#ffcdd2';
+    btn.disabled = false;
+    btn.textContent = 'Salvar Alterações';
+  });
+}
 
 // ===================== INIT =====================
 window.onload=function(){
