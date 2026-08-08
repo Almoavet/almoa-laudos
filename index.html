@@ -1880,6 +1880,7 @@ function reimprimirLaudo(l) {
   var barra = document.createElement('div');
   barra.style.cssText = 'max-width:860px;margin:0 auto 12px;display:flex;gap:10px;flex-wrap:wrap;'
     + 'background:#1a3a6b;padding:10px 16px;border-radius:6px;align-items:center;';
+  console.log('REIMPR: criando barra e conteudo...');
   barra.innerHTML = ''
     + '<button onclick="window.print()" style="background:#fff;color:#1a3a6b;border:none;'
     + 'padding:8px 18px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
@@ -1897,13 +1898,26 @@ function reimprimirLaudo(l) {
   var wrap = document.createElement('div');
   wrap.className = 'laudo-wrap';
 
-  // Cabeçalho
+  // Cabecalho
   var cab = document.createElement('div');
   cab.className = 'laudo-header';
-  cab.innerHTML = '<div class="laudo-logo"><img src="' + logoSrc + '" style="max-height:52px;max-width:200px;object-fit:contain;"></div>'
-    + '<div class="laudo-clinica"><strong>ALMOA MEDICINA VETERIN&Aacute;RIA LTDA.</strong>'
+
+  var logoDiv = document.createElement('div');
+  logoDiv.className = 'laudo-logo';
+  var logoImg = document.createElement('img');
+  logoImg.src = logoSrc;
+  logoImg.alt = 'Almoa';
+  logoImg.style.cssText = 'max-height:52px;max-width:200px;object-fit:contain;';
+  logoDiv.appendChild(logoImg);
+
+  var clinicaDiv = document.createElement('div');
+  clinicaDiv.className = 'laudo-clinica';
+  clinicaDiv.innerHTML = '<strong>ALMOA MEDICINA VETERIN&Aacute;RIA LTDA.</strong>'
     + 'CNPJ: 56.038.125/0001-65<br>Rua Coronel Lisboa, 735 &mdash; Vila Mariana, SP<br>'
-    + 'CEP 04020-041<br>contato@almoa.com.br</div>';
+    + 'CEP 04020-041<br>contato@almoa.com.br';
+
+  cab.appendChild(logoDiv);
+  cab.appendChild(clinicaDiv);
   wrap.appendChild(cab);
 
   // Ficha
@@ -2011,7 +2025,7 @@ function reimprimirLaudo(l) {
   wrap.appendChild(footer);
 
   // Monta tudo
-  rv.innerHTML = '';
+  while (rv.firstChild) rv.removeChild(rv.firstChild);
   rv.appendChild(barra);
   var container = document.createElement('div');
   container.style.cssText = 'max-width:860px;margin:0 auto;';
@@ -2023,6 +2037,7 @@ function reimprimirLaudo(l) {
   var lv = document.getElementById('laudo-view');
   if (lv) lv.style.display = 'none';
 
+  console.log('REIMPR: done. reimpr-view display=' + rv.style.display + ' zIndex=' + rv.style.zIndex);
   window.scrollTo(0, 0);
 }
 
