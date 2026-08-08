@@ -1860,6 +1860,7 @@ function fecharModal(){
 
 // Gera e imprime o laudo a partir dos dados do Supabase
 function reimprimirLaudo(l) {
+  if (!l) { alert('Dados do laudo não disponíveis.'); return; }
   fecharModal();
 
   // Usa data original do laudo
@@ -1875,18 +1876,29 @@ function reimprimirLaudo(l) {
 
   // Monta tabelas de resultados
   function montaTabelaArchived(dados, titulo) {
-    if (!dados || Object.keys(dados).length === 0) return '';
-    var linhas = Object.entries(dados).map(function(entry) {
-      var v = entry[1];
-      if (!v || !v.valor) return '';
-      return '<tr><td>' + (v.nome || entry[0]) + '</td><td>' + (v.unidade || '') + '</td>'
-        + '<td style="font-weight:700">' + v.valor + '</td></tr>';
-    }).filter(Boolean).join('');
-    if (!linhas) return '';
-    return '<div class="laudo-secao"><div class="laudo-secao-titulo">' + titulo + '</div>'
-      + '<table class="laudo-table"><thead><tr>'
-      + '<th>Parâmetro</th><th>Unidade</th><th>Resultado</th>'
-      + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+    try {
+      if (!dados) return '';
+      // Handle both object and array formats from Supabase JSONB
+      var entries = typeof dados === 'object' && !Array.isArray(dados) 
+        ? Object.entries(dados) : [];
+      if (!entries.length) return '';
+      var linhas = entries.map(function(entry) {
+        var v = entry[1];
+        if (!v) return '';
+        // v can be {valor, nome, unidade} or a primitive
+        var valor = typeof v === 'object' ? (v.valor || '') : String(v);
+        var nome  = typeof v === 'object' ? (v.nome || entry[0]) : entry[0];
+        var unit  = typeof v === 'object' ? (v.unidade || '') : '';
+        if (!valor) return '';
+        return '<tr><td>' + nome + '</td><td>' + unit + '</td>'
+          + '<td style="font-weight:700">' + valor + '</td></tr>';
+      }).filter(Boolean).join('');
+      if (!linhas) return '';
+      return '<div class="laudo-secao"><div class="laudo-secao-titulo">' + titulo + '</div>'
+        + '<table class="laudo-table"><thead><tr>'
+        + '<th>Parâmetro</th><th>Unidade</th><th>Resultado</th>'
+        + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+    } catch(e) { return ''; }
   }
 
   // Monta HTML completo do laudo arquivado
@@ -1999,13 +2011,26 @@ function reimprimirLaudo(l) {
     + '</div>';
 
   // Exibe no laudo-view
-  document.getElementById('laudo-content').innerHTML = html + signBarHTML;
+  try {
+    document.getElementById('laudo-content').innerHTML = html + signBarHTML;
+  } catch(htmlErr) {
+    console.error('Erro ao montar HTML:', htmlErr);
+    // Show error inside laudo-view but don't return - let the view open
+    document.getElementById('laudo-content').innerHTML = 
+      '<div style="padding:20px;font-family:Arial,sans-serif;color:#c0392b;">'
+      + '<strong>Erro ao carregar laudo:</strong> ' + htmlErr.message
+      + '<br><br>Tente novamente ou verifique o console do navegador.</div>'
+      + signBarHTML;
+  }
   document.getElementById('app').style.display = 'none';
   document.getElementById('laudo-view').style.display = 'block';
 
-  // Oculta a barra de impressão padrão e botão salvar
+  // Oculta a barra de impressão padrão e substitui pelo sign-bar-r
   var printBar = document.querySelector('.print-bar');
   if (printBar) printBar.style.display = 'none';
+
+  var signBarOriginal = document.getElementById('sign-bar');
+  if (signBarOriginal) signBarOriginal.style.display = 'none';
 
   window.scrollTo(0, 0);
 }
