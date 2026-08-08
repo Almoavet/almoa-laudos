@@ -144,6 +144,7 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
 @media print{
   #app{display:none!important;}
   .print-bar{display:none!important;}
+  #sign-bar-r{display:none!important;}
   #laudo-view{display:block!important;}
   body{background:#fff;}
   .laudo-wrap{padding:15px 20px;}
@@ -1860,8 +1861,10 @@ function fecharModal(){
 
 // Gera e imprime o laudo a partir dos dados do Supabase
 function reimprimirLaudo(l) {
+  console.log('reimprimirLaudo chamado, l=', l ? 'OK' : 'NULL');
   if (!l) { alert('Dados do laudo não disponíveis.'); return; }
   fecharModal();
+  console.log('Modal fechado, montando HTML...');
 
   // Usa data original do laudo
   var dataOriginal = l.data_coleta || l.data_emissao || '';
@@ -2022,25 +2025,32 @@ function reimprimirLaudo(l) {
       + '<br><br>Tente novamente ou verifique o console do navegador.</div>'
       + signBarHTML;
   }
+  console.log('Applying display changes...');
+  // Usa div dedicada para reimpressão (evita conflito com print-bar padrão)
+  var reimprDiv = document.getElementById('reimpr-view');
+  if (!reimprDiv) {
+    reimprDiv = document.createElement('div');
+    reimprDiv.id = 'reimpr-view';
+    reimprDiv.style.cssText = 'max-width:860px;margin:0 auto;padding:12px;';
+    document.body.appendChild(reimprDiv);
+  }
+  reimprDiv.innerHTML = '<div class="laudo-wrap">' + html + '</div>' + signBarHTML;
+  reimprDiv.style.display = 'block';
+
+  // Esconde app e laudo-view padrão
   document.getElementById('app').style.display = 'none';
-  document.getElementById('laudo-view').style.display = 'block';
+  var laudoView = document.getElementById('laudo-view');
+  if (laudoView) laudoView.style.display = 'none';
 
-  // Oculta a barra de impressão padrão e substitui pelo sign-bar-r
-  var printBar = document.querySelector('.print-bar');
-  if (printBar) printBar.style.display = 'none';
-
-  var signBarOriginal = document.getElementById('sign-bar');
-  if (signBarOriginal) signBarOriginal.style.display = 'none';
-
+  console.log('reimprimirLaudo concluido!');
   window.scrollTo(0, 0);
 }
 
 function voltarConsulta() {
-  // Restaura barra de impressão padrão
-  var printBar = document.querySelector('.print-bar');
-  if (printBar) printBar.style.display = 'flex';
-  // Volta para aba de consulta
-  document.getElementById('laudo-view').style.display = 'none';
+  // Esconde div de reimpressão
+  var reimprDiv = document.getElementById('reimpr-view');
+  if (reimprDiv) reimprDiv.style.display = 'none';
+  // Mostra app na aba de consulta
   document.getElementById('app').style.display = 'block';
   setTab(5);
 }
@@ -2066,7 +2076,7 @@ async function assinarReimpressao() {
     }
     btn.textContent = 'Calculando hash...';
     var encoder   = new TextEncoder();
-    var laudoEl   = document.getElementById('laudo-content');
+    var laudoEl = document.getElementById('reimpr-view') || document.getElementById('laudo-content');
     var hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(laudoEl ? laudoEl.innerText : ''));
     var hashHex   = Array.from(new Uint8Array(hashBuffer)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
     var certBuffer  = await file.arrayBuffer();
