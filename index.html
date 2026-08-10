@@ -218,10 +218,10 @@ body{font-family:'Courier New',Courier,monospace;background:#eef2f8;color:#222;}
       <div class="fgg"><label>ID / Código do Exame</label><input id="pIdExame" type="text" placeholder="Ex: ALM-2025-001234"></div>
       <div class="fgg"><label>Microchip (opcional)</label><input id="pMicrochip" type="text" placeholder="Número do microchip"></div>
       <div class="fgg"><label>Data / Hora da Coleta</label><input id="pData" type="datetime-local"></div>
-      <div class="fgg full"><label>Médico Veterinário Responsável</label>
-        <input id="pMV" type="text" value="Dr. Dnilson Carlos Dias"></div>
-      <div class="fgg full"><label>CRMV</label>
-        <input id="pCRMV" type="text" value="CRMV 74.780 SP"></div>
+      <div class="fgg full"><label>Médico Solicitante (quem pediu o exame)</label>
+        <input id="pMV" type="text" placeholder="Nome do MV solicitante"></div>
+      <div class="fgg full"><label>CRMV do Solicitante</label>
+        <input id="pCRMV" type="text" placeholder="Ex: CRMV 12.345 SP"></div>
     </div>
     <div class="actions">
       <button class="btn-primary" onclick="setTab(1)">Próximo: Hemograma →</button>
@@ -1333,7 +1333,7 @@ function gerarLaudo(){
     <div class="ficha-item">${pts('Idade',idade,12)}</div>
     ${chip?`<div class="ficha-item">${pts('Microchip',chip,12)}</div>`:''} 
     <div class="ficha-item">${pts('Coleta',dataStr,12)}</div>
-    <div class="ficha-item" style="grid-column:1/-1">${pts('Solicitante',mv+' — '+crmv,12)}</div>
+    <div class="ficha-item" style="grid-column:1/-1">${pts('MV Solicitante',mv+' — '+crmv,12)}</div>
   </div>
 </div>
 
@@ -1350,8 +1350,8 @@ ${peleHTML}
         <span style="font-family:Arial,sans-serif;font-size:10px;color:#aaa;">Aguardando assinatura digital</span>
       </div>
       <div id="sig-badge" style="display:none;"></div>
-      <div class="footer-mv-name">${mv}</div>
-      <div class="footer-mv-crmv">${crmv}</div>
+      <div class="footer-mv-name">Dr. Dnilson Carlos Dias</div>
+      <div class="footer-mv-crmv">CRMV 74.780 SP</div>
     </div>
   </div>
   <div class="footer-disclaimer">
@@ -1533,8 +1533,8 @@ async function salvarNoSupabase() {
       idade: gv('pIdade') || null,
       microchip: gv('pMicrochip') || null,
       responsavel: gv('pProprietario') || null,
-      mv_nome: gv('pMV') || 'Dr. Dnilson Carlos Dias',
-      mv_crmv: gv('pCRMV') || 'CRMV 74.780 SP',
+      mv_nome: gv('pMV') || null,  // MV solicitante
+      mv_crmv: gv('pCRMV') || null,
       serie_vermelha: coletarValores('serie_vermelha'),
       serie_branca: coletarValores(brancaKey),
       plaquetas: coletarValores('plaquetas'),
@@ -1575,8 +1575,8 @@ function resetarFormulario() {
       const agora = new Date();
       agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
       el.value = agora.toISOString().slice(0,16);
-    } else if (el.id==='pMV')  { el.value='Dr. Dnilson Carlos Dias'; }
-    else if (el.id==='pCRMV') { el.value='CRMV 74.780 SP'; }
+    } else if (el.id==='pMV')  { el.value=''; }
+    else if (el.id==='pCRMV') { el.value=''; }
     else if (el.id==='obsH')  { el.value='Morfologia eritrocitica preservada. Pesquisa de hematozoarios negativa.'; }
     else { el.value=''; }
   });
@@ -1973,8 +1973,10 @@ function reimprimirLaudo(l) {
   var ficha = document.createElement('div');
   ficha.className = 'laudo-ficha';
   var dataColeta = l.data_coleta ? fmtDataLaudo(l.data_coleta) : fmtDataLaudo(l.data_emissao);
-  var mv   = l.mv_nome || 'Dr. Dnilson Carlos Dias';
-  var crmv = l.mv_crmv || 'CRMV 74.780 SP';
+  var mvSolic = l.mv_nome || null;
+  var crmvSolic = l.mv_crmv || null;
+  var mv   = 'Dr. Dnilson Carlos Dias';
+  var crmv = 'CRMV 74.780 SP';
   var p2 = function(lbl, val) {
     var dots = new Array(Math.max(2, 14 - lbl.length)).join('.');
     return '<div class="ficha-item"><strong>' + lbl + '</strong>' + dots + ' ' + (val||'&mdash;') + '</div>';
@@ -1991,7 +1993,7 @@ function reimprimirLaudo(l) {
     + p2('Respons&aacute;vel', l.responsavel)
     + p2('Coleta',      dataColeta)
     + '<div class="ficha-item" style="grid-column:1/-1">'
-    + p2('Solicitante', mv + ' &mdash; ' + crmv).replace('<div class="ficha-item">','').replace('</div>','')
+    + p2('MV Solicitante', mv + ' &mdash; ' + crmv).replace('<div class="ficha-item">','').replace('</div>','')
     + '</div>'
     + '</div>';
   wrap.appendChild(ficha);
@@ -2447,8 +2449,8 @@ function abrirEdicao(l) {
     + fld('microchip',   'Microchip',         l.microchip)
     + '<div class="edit-fgg"><label>Data da Coleta</label>'
     + '<input type="datetime-local" id="ed_data_coleta" value="' + dataColeta + '"></div>'
-    + fld('mv_nome',     'Médico Veterinário', l.mv_nome, true)
-    + fld('mv_crmv',     'CRMV',              l.mv_crmv)
+    + fld('mv_nome',     'MV Solicitante (quem pediu)', l.mv_nome, true)
+    + fld('mv_crmv',     'CRMV do Solicitante', l.mv_crmv)
     + '</div></div>'
 
     // Série vermelha
